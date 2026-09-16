@@ -1,0 +1,11 @@
+.git
+node_modules
+coverage
+dist
+.env
+.env.*
+*.pem
+*.key
+*.keystore
+*.jks
+README.md
