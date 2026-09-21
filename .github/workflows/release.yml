@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  prerequisites:
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify implementation and release configuration
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+          CLOUD_SQL_INSTANCE: ${{ vars.CLOUD_SQL_INSTANCE }}
+          API_SERVICE: ${{ vars.CLOUD_RUN_API_SERVICE }}
+          WORKER_SERVICE: ${{ vars.CLOUD_RUN_WORKER_SERVICE }}
+        run: |
+          test -f apps/api/package.json
+          test -f apps/mobile/package.json
+          test -n "$GCP_PROJECT_ID" && test -n "$GCP_REGION" && test -n "$CLOUD_SQL_INSTANCE"
+          test -n "$API_SERVICE" && test -n "$WORKER_SERVICE"
+  release:
+    needs: prerequisites
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - run: echo 'Implementation-owned release build, migration, Cloud Run deployment, health checks, and Google Play upload will be added when their application entrypoints exist.'
