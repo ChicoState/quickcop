@@ -11,7 +11,8 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
 - `tests/` — empty unit and integration test locations for future application tests.
 - `.github/workflows/` — pull-request checks and guarded release prerequisite workflow.
 - `.agents/skills/` — project-supplied agent guidance.
-- `apps/mobile` and `apps/api` — not created yet; application implementation owns them.
+- `apps/mobile` — Expo/React Native Android foundation with local-only login and account-creation UI.
+- `apps/api` — not created yet; application implementation owns it.
 
 ## Getting Started
 
@@ -46,6 +47,10 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
    `npm test` and `npm run test:integration` validate an empty harness until application-owned tests exist. `npm run test:smoke` starts PostgreSQL, performs only `SELECT 1`, and stops/removes its local volume.
 
 5. For an interactive local database, run `npm run docker:up`; clean it up with `npm run docker:down`.
+
+## Mobile app
+
+The initial Android UI is in `apps/mobile`. It does not authenticate or persist data yet. With Node.js 22.14.0, an Android SDK/emulator, and its locked dependencies installed, run `cd apps/mobile && npm run android:run` to compile and launch the debug app. Run `npm run android` instead when using Expo Go on a running emulator, and `npm test -- --runInBand` for component tests.
 
 ## Docker and deployment boundary
 
