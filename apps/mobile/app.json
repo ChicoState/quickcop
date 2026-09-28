@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "QuickCop",
+    "slug": "quickcop",
+    "scheme": "quickcop",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.quickcop.app"
+    },
+    "plugins": ["expo-router"]
+  }
+}
