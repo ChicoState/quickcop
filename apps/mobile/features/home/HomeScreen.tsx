@@ -12,11 +12,13 @@ import {
 type HomeScreenProps = {
   onLogout: () => void;
   onOpenNotifications: () => void;
+  onOpenWatchedItems?: () => void;
 };
 
 export function HomeScreen({
   onLogout,
   onOpenNotifications,
+  onOpenWatchedItems = () => undefined,
 }: HomeScreenProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -50,14 +52,11 @@ export function HomeScreen({
               <Text style={styles.menuItem}>Home</Text>
             </Pressable>
 
-            <Pressable>
+            <Pressable accessibilityRole="button" onPress={onOpenWatchedItems}>
               <Text style={styles.menuItem}>Watched Items</Text>
             </Pressable>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={onOpenNotifications}
-            >
+            <Pressable accessibilityRole="button" onPress={onOpenNotifications}>
               <Text style={styles.menuItem}>Price alerts</Text>
             </Pressable>
 
@@ -70,9 +69,7 @@ export function HomeScreen({
             </Pressable>
 
             {/* Categories */}
-            <Pressable
-              onPress={() => setCategoriesOpen(!categoriesOpen)}
-            >
+            <Pressable onPress={() => setCategoriesOpen(!categoriesOpen)}>
               <Text style={styles.menuItem}>
                 Categories {categoriesOpen ? "▲" : "▼"}
               </Text>
@@ -121,11 +118,17 @@ export function HomeScreen({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Watched Items</Text>
 
-          <View style={styles.emptyCard}>
+          <Pressable
+            accessibilityLabel="View watched items"
+            accessibilityRole="button"
+            onPress={onOpenWatchedItems}
+            style={styles.emptyCard}
+          >
             <Text style={styles.emptyText}>
               You are not watching any items yet.
             </Text>
-          </View>
+            <Text style={styles.emptyAction}>Add or manage watched items</Text>
+          </Pressable>
         </View>
 
         {/* Recommended */}
@@ -133,17 +136,9 @@ export function HomeScreen({
           <Text style={styles.sectionTitle}>Recommended</Text>
 
           <View style={styles.productRow}>
-            <ProductCard
-              name="Product Name"
-              store="Amazon"
-              price="$24.99"
-            />
+            <ProductCard name="Product Name" store="Amazon" price="$24.99" />
 
-            <ProductCard
-              name="Product Name"
-              store="Target"
-              price="$39.99"
-            />
+            <ProductCard name="Product Name" store="Target" price="$39.99" />
           </View>
         </View>
 
@@ -152,17 +147,9 @@ export function HomeScreen({
           <Text style={styles.sectionTitle}>Popular</Text>
 
           <View style={styles.productRow}>
-            <ProductCard
-              name="Product Name"
-              store="Walmart"
-              price="$19.99"
-            />
+            <ProductCard name="Product Name" store="Walmart" price="$19.99" />
 
-            <ProductCard
-              name="Product Name"
-              store="Amazon"
-              price="$49.99"
-            />
+            <ProductCard name="Product Name" store="Amazon" price="$49.99" />
           </View>
         </View>
       </ScrollView>
@@ -287,6 +274,13 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#aaa",
     fontSize: 15,
+  },
+
+  emptyAction: {
+    color: "#79DCA0",
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 10,
   },
 
   productRow: {

@@ -10,7 +10,9 @@ describe("NotificationsScreen", () => {
     const screen = await render(<NotificationsScreen />);
 
     expect(screen.getByText("Nintendo Switch 2")).toBeTruthy();
-    expect(screen.getByText("Price dropped from $499.99 to $449.99")).toBeTruthy();
+    expect(
+      screen.getByText("Price dropped from $499.99 to $449.99"),
+    ).toBeTruthy();
 
     const alertToggle = screen.getByRole("switch", {
       name: "Nintendo Switch 2 price alert",
@@ -20,8 +22,8 @@ describe("NotificationsScreen", () => {
     await fireEvent(alertToggle, "valueChange", false);
 
     expect(
-      screen.getByRole("switch", { name: "Nintendo Switch 2 price alert" }).props
-        .value,
+      screen.getByRole("switch", { name: "Nintendo Switch 2 price alert" })
+        .props.value,
     ).toBe(false);
   });
 
@@ -31,7 +33,9 @@ describe("NotificationsScreen", () => {
 
     expect(screen.getByText("No price alerts yet")).toBeTruthy();
     expect(
-      screen.getByText("Watch an item and set a target price to see alerts here."),
+      screen.getByText(
+        "Watch an item and set a target price to see alerts here.",
+      ),
     ).toBeTruthy();
   });
 

@@ -1,12 +1,6 @@
 import { useState } from "react";
 
-import {
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export type PriceAlert = {
@@ -90,7 +84,8 @@ export function NotificationsScreen({
                   <Text style={styles.productName}>{alert.name}</Text>
                   <Text style={styles.retailer}>{alert.retailer}</Text>
                   <Text style={styles.priceChange}>
-                    Price dropped from {alert.previousPrice} to {alert.currentPrice}
+                    Price dropped from {alert.previousPrice} to{" "}
+                    {alert.currentPrice}
                   </Text>
                   <Text style={styles.targetPrice}>
                     Your target: {alert.targetPrice}
@@ -98,7 +93,9 @@ export function NotificationsScreen({
                 </View>
                 <Switch
                   accessibilityLabel={`${alert.name} price alert`}
-                  onValueChange={(enabled) => setAlertEnabled(alert.id, enabled)}
+                  onValueChange={(enabled) =>
+                    setAlertEnabled(alert.id, enabled)
+                  }
                   thumbColor={alert.enabled ? "#FFFFFF" : "#B8B8B8"}
                   trackColor={{ false: "#4A4A4A", true: "#2E8B57" }}
                   value={alert.enabled}
@@ -172,7 +169,12 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 30, fontWeight: "700", marginBottom: 8 },
   subtitle: { color: "#aaa", fontSize: 16, lineHeight: 22, marginBottom: 32 },
   section: { marginBottom: 32 },
-  sectionTitle: { color: "#fff", fontSize: 21, fontWeight: "600", marginBottom: 14 },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 21,
+    fontWeight: "600",
+    marginBottom: 14,
+  },
   alertCard: {
     alignItems: "center",
     backgroundColor: "#161616",
@@ -184,7 +186,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   alertContent: { flex: 1, paddingRight: 12 },
-  productName: { color: "#fff", fontSize: 17, fontWeight: "600", marginBottom: 4 },
+  productName: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
   retailer: { color: "#aaa", fontSize: 14, marginBottom: 10 },
   priceChange: { color: "#fff", fontSize: 15, lineHeight: 21, marginBottom: 4 },
   targetPrice: { color: "#79DCA0", fontSize: 14, fontWeight: "600" },
@@ -195,7 +202,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 22,
   },
-  emptyTitle: { color: "#fff", fontSize: 17, fontWeight: "600", marginBottom: 6 },
+  emptyTitle: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
   emptyText: { color: "#aaa", fontSize: 15, lineHeight: 21 },
   settingsCard: {
     backgroundColor: "#161616",
@@ -204,9 +216,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
   },
-  settingRow: { alignItems: "center", flexDirection: "row", paddingVertical: 16 },
+  settingRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    paddingVertical: 16,
+  },
   settingContent: { flex: 1, paddingRight: 12 },
-  settingLabel: { color: "#fff", fontSize: 16, fontWeight: "600", marginBottom: 4 },
+  settingLabel: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
   settingDescription: { color: "#aaa", fontSize: 14, lineHeight: 20 },
   divider: { backgroundColor: "#2b2b2b", height: 1 },
   helperText: { color: "#888", fontSize: 13, lineHeight: 19, marginTop: 10 },
