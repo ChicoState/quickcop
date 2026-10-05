@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   Pressable,
   SafeAreaView,
@@ -9,16 +11,28 @@ import {
 
 type HomeScreenProps = {
   onLogout: () => void;
+  onOpenNotifications: () => void;
 };
 
-export function HomeScreen({ onLogout }: HomeScreenProps) {
+export function HomeScreen({
+  onLogout,
+  onOpenNotifications,
+}: HomeScreenProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [storesOpen, setStoresOpen] = useState(false);
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-
         {/* Header */}
         <View style={styles.header}>
-          <Pressable style={styles.iconButton}>
+          <Pressable
+            accessibilityLabel="Open menu"
+            accessibilityRole="button"
+            style={styles.iconButton}
+            onPress={() => setMenuOpen(!menuOpen)}
+          >
             <Text style={styles.iconText}>☰</Text>
           </Pressable>
 
@@ -29,6 +43,78 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
           </Pressable>
         </View>
 
+        {/* Hamburger Menu */}
+        {menuOpen && (
+          <View style={styles.menu}>
+            <Pressable>
+              <Text style={styles.menuItem}>Home</Text>
+            </Pressable>
+
+            <Pressable>
+              <Text style={styles.menuItem}>Watched Items</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={onOpenNotifications}
+            >
+              <Text style={styles.menuItem}>Price alerts</Text>
+            </Pressable>
+
+            <Pressable>
+              <Text style={styles.menuItem}>Recommended</Text>
+            </Pressable>
+
+            <Pressable>
+              <Text style={styles.menuItem}>Popular</Text>
+            </Pressable>
+
+            {/* Categories */}
+            <Pressable
+              onPress={() => setCategoriesOpen(!categoriesOpen)}
+            >
+              <Text style={styles.menuItem}>
+                Categories {categoriesOpen ? "▲" : "▼"}
+              </Text>
+            </Pressable>
+
+            {categoriesOpen && (
+              <View style={styles.subMenu}>
+                <Text style={styles.subMenuItem}>Tickets</Text>
+                <Text style={styles.subMenuItem}>Cards</Text>
+                <Text style={styles.subMenuItem}>Lego</Text>
+                <Text style={styles.subMenuItem}>See All</Text>
+              </View>
+            )}
+
+            {/* Stores */}
+            <Pressable onPress={() => setStoresOpen(!storesOpen)}>
+              <Text style={styles.menuItem}>
+                Stores {storesOpen ? "▲" : "▼"}
+              </Text>
+            </Pressable>
+
+            {storesOpen && (
+              <View style={styles.subMenu}>
+                <Text style={styles.subMenuItem}>Amazon</Text>
+                <Text style={styles.subMenuItem}>Target</Text>
+                <Text style={styles.subMenuItem}>Walmart</Text>
+                <Text style={styles.subMenuItem}>See All</Text>
+              </View>
+            )}
+
+            {/* Settings */}
+            <Pressable>
+              <Text style={styles.menuItem}>Settings</Text>
+            </Pressable>
+
+            <Pressable accessibilityRole="button" onPress={onLogout}>
+              <Text style={styles.logoutMenuItem}>Log out</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Home */}
         <Text style={styles.title}>Home</Text>
 
         {/* Watched Items */}
@@ -79,12 +165,6 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
             />
           </View>
         </View>
-
-        {/* Logout */}
-        <Pressable style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>Log out</Text>
-        </Pressable>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -124,7 +204,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 20,
   },
 
   logo: {
@@ -143,6 +223,39 @@ const styles = StyleSheet.create({
   iconText: {
     color: "#fff",
     fontSize: 26,
+  },
+
+  menu: {
+    backgroundColor: "#161616",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 25,
+  },
+
+  menuItem: {
+    color: "#fff",
+    fontSize: 18,
+    paddingVertical: 10,
+  },
+
+  subMenu: {
+    marginLeft: 20,
+    marginBottom: 6,
+  },
+
+  subMenuItem: {
+    color: "#aaa",
+    fontSize: 16,
+    paddingVertical: 7,
+  },
+
+  logoutMenuItem: {
+    color: "#ff7777",
+    fontSize: 18,
+    paddingVertical: 10,
+    marginTop: 8,
   },
 
   title: {
@@ -221,19 +334,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 17,
     fontWeight: "700",
-  },
-
-  logoutButton: {
-    borderWidth: 1,
-    borderColor: "#444",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 30,
-  },
-
-  logoutText: {
-    color: "#fff",
-    fontSize: 15,
   },
 });
