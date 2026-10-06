@@ -28,8 +28,8 @@ export function CreateAccountScreen({
   const [error, setError] = useState("");
 
   function handleCreateAccount() {
-    if ((!email.trim() && !phone.trim()) || !username.trim() || !password) {
-      setError("Add an email or phone number, a username, and a password.");
+    if (!email.trim() || !username.trim() || !password) {
+      setError("Enter an email, a username, and a password.");
       return;
     }
 
@@ -51,7 +51,7 @@ export function CreateAccountScreen({
             Create your account.
           </Text>
           <Text style={authStyles.subtitle}>
-            Phone number is optional and will be used for text alerts later.
+            Add your account details to get started.
           </Text>
 
           <View style={authStyles.inputGroup}>
@@ -76,7 +76,7 @@ export function CreateAccountScreen({
               autoComplete="tel"
               keyboardType="phone-pad"
               onChangeText={setPhone}
-              placeholder="For future text alerts"
+              placeholder="Optional"
               placeholderTextColor="#7A7A7A"
               style={authStyles.input}
               value={phone}

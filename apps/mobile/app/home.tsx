@@ -5,5 +5,10 @@ import { HomeScreen } from "../features/home/HomeScreen";
 export default function HomeRoute() {
   const router = useRouter();
 
-  return <HomeScreen onLogout={() => router.replace("/")} />;
+  return (
+    <HomeScreen
+      onAccountInfo={() => router.push("/account")}
+      onLogout={() => router.replace("/")}
+    />
+  );
 }

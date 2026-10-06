@@ -5,9 +5,9 @@ import { LoginScreen } from "../features/auth/LoginScreen";
 import { HomeScreen } from "../features/home/HomeScreen";
 
 describe("local authentication prototype", () => {
-  it("opens the home screen after the user submits a username and password", () => {
+  it("opens the home screen after the user submits a username and password", async () => {
     const onLogin = jest.fn();
-    const screen = render(
+    const screen = await render(
       <LoginScreen onLogin={onLogin} onCreateAccount={jest.fn()} />,
     );
 
@@ -18,9 +18,9 @@ describe("local authentication prototype", () => {
     expect(onLogin).toHaveBeenCalledTimes(1);
   });
 
-  it("allows account creation with an email and no phone number", () => {
+  it("allows account creation with an email and no phone number", async () => {
     const onAccountCreated = jest.fn();
-    const screen = render(
+    const screen = await render(
       <CreateAccountScreen
         onAccountCreated={onAccountCreated}
         onBackToLogin={jest.fn()}
@@ -35,9 +35,32 @@ describe("local authentication prototype", () => {
     expect(onAccountCreated).toHaveBeenCalledTimes(1);
   });
 
-  it("returns to login when the user logs out from the empty home screen", () => {
+  it("requires an email even when a phone number is provided", async () => {
+    const onAccountCreated = jest.fn();
+    const screen = await render(
+      <CreateAccountScreen
+        onAccountCreated={onAccountCreated}
+        onBackToLogin={jest.fn()}
+      />,
+    );
+
+    fireEvent.changeText(
+      screen.getByLabelText("Phone number (optional)"),
+      "555-0100",
+    );
+    fireEvent.changeText(screen.getByLabelText("Username"), "quickcop_user");
+    fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    expect(onAccountCreated).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Enter an email, a username, and a password."),
+    ).toBeTruthy();
+  });
+
+  it("returns to login when the user logs out from the empty home screen", async () => {
     const onLogout = jest.fn();
-    const screen = render(<HomeScreen onLogout={onLogout} />);
+    const screen = await render(<HomeScreen onLogout={onLogout} />);
 
     fireEvent.press(screen.getByRole("button", { name: "Log out" }));
 
