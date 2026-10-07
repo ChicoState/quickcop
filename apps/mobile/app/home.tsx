@@ -9,6 +9,7 @@ export default function HomeRoute() {
     <HomeScreen
       onAccountInfo={() => router.push("/account")}
       onLogout={() => router.replace("/")}
+      onOpenNotifications={() => router.push("/notifications")}
     />
   );
 }
