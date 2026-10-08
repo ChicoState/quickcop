@@ -31,22 +31,24 @@ describe("AccountInfoScreen", () => {
       screen.getByText("Push notifications are unavailable on this device."),
     ).toBeTruthy();
 
-    fireEvent.changeText(screen.getByLabelText("Username"), "new_name");
-    fireEvent.changeText(
+    await fireEvent.changeText(screen.getByLabelText("Username"), "new_name");
+    await fireEvent.changeText(
       screen.getByLabelText("Phone number (optional)"),
       "555-0100",
     );
-    fireEvent(
+    await fireEvent(
       screen.getByLabelText("Restock push alerts"),
       "valueChange",
       true,
     );
-    fireEvent(
+    await fireEvent(
       screen.getByLabelText("Price-change email alerts"),
       "valueChange",
       true,
     );
-    fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Save changes" }),
+    );
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith({
@@ -68,9 +70,11 @@ describe("AccountInfoScreen", () => {
       <AccountInfoScreen account={account} onSave={jest.fn()} />,
     );
 
-    fireEvent.changeText(screen.getByLabelText("Username"), " ");
-    fireEvent.changeText(screen.getByLabelText("Email"), "not-an-email");
-    fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
+    await fireEvent.changeText(screen.getByLabelText("Username"), " ");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "not-an-email");
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Save changes" }),
+    );
 
     expect(screen.getByText("Enter a username.")).toBeTruthy();
     expect(screen.getByText("Enter a valid email address.")).toBeTruthy();

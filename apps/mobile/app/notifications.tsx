@@ -1,5 +1,13 @@
+import { useRouter } from "expo-router";
+
 import { NotificationsScreen } from "../features/notifications/NotificationsScreen";
 
 export default function NotificationsRoute() {
-  return <NotificationsScreen />;
+  const router = useRouter();
+
+  return (
+    <NotificationsScreen
+      onManageDeliveryPreferences={() => router.push("/account")}
+    />
+  );
 }

@@ -7,7 +7,9 @@ import {
 
 describe("NotificationsScreen", () => {
   it("shows example price-drop alerts and lets the user toggle an alert locally", async () => {
-    const screen = await render(<NotificationsScreen />);
+    const screen = await render(
+      <NotificationsScreen onManageDeliveryPreferences={jest.fn()} />,
+    );
 
     expect(screen.getByText("Nintendo Switch 2")).toBeTruthy();
     expect(
@@ -29,7 +31,12 @@ describe("NotificationsScreen", () => {
 
   it("shows an empty state when no price alerts are available", async () => {
     const alerts: PriceAlert[] = [];
-    const screen = await render(<NotificationsScreen alerts={alerts} />);
+    const screen = await render(
+      <NotificationsScreen
+        alerts={alerts}
+        onManageDeliveryPreferences={jest.fn()}
+      />,
+    );
 
     expect(screen.getByText("No price alerts yet")).toBeTruthy();
     expect(
@@ -39,18 +46,24 @@ describe("NotificationsScreen", () => {
     ).toBeTruthy();
   });
 
-  it("lets the user toggle notification settings locally", async () => {
-    const screen = await render(<NotificationsScreen />);
-    const priceDropToggle = screen.getByRole("switch", {
-      name: "Price drop notifications",
-    });
+  it("opens delivery preferences without rendering duplicate global settings", async () => {
+    const onManageDeliveryPreferences = jest.fn();
+    const screen = await render(
+      <NotificationsScreen
+        onManageDeliveryPreferences={onManageDeliveryPreferences}
+      />,
+    );
 
-    expect(priceDropToggle.props.value).toBe(true);
-    await fireEvent(priceDropToggle, "valueChange", false);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Manage delivery preferences" }),
+    );
 
+    expect(onManageDeliveryPreferences).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole("switch", { name: "Price drop notifications" }).props
-        .value,
-    ).toBe(false);
+      screen.queryByRole("switch", { name: "Price drop notifications" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("switch", { name: "Back in stock notifications" }),
+    ).toBeNull();
   });
 });

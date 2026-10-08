@@ -1,6 +1,13 @@
 import { useState } from "react";
 
-import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export type PriceAlert = {
@@ -36,16 +43,14 @@ const exampleAlerts: PriceAlert[] = [
 
 type NotificationsScreenProps = {
   alerts?: PriceAlert[];
+  onManageDeliveryPreferences: () => void;
 };
 
 export function NotificationsScreen({
   alerts = exampleAlerts,
+  onManageDeliveryPreferences,
 }: NotificationsScreenProps) {
   const [priceAlerts, setPriceAlerts] = useState(alerts);
-  const [priceDropNotificationsEnabled, setPriceDropNotificationsEnabled] =
-    useState(true);
-  const [backInStockNotificationsEnabled, setBackInStockNotificationsEnabled] =
-    useState(true);
 
   function setAlertEnabled(id: string, enabled: boolean) {
     setPriceAlerts((currentAlerts) =>
@@ -105,61 +110,21 @@ export function NotificationsScreen({
           )}
         </View>
 
-        <View style={styles.section}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
-            Notification settings
+        <Pressable
+          accessibilityLabel="Manage delivery preferences"
+          accessibilityRole="button"
+          onPress={onManageDeliveryPreferences}
+          style={styles.preferencesLink}
+        >
+          <Text style={styles.preferencesLinkText}>
+            Manage delivery preferences
           </Text>
-          <View style={styles.settingsCard}>
-            <SettingRow
-              description="Tell me when a watched item reaches my target price."
-              label="Price drop notifications"
-              onValueChange={setPriceDropNotificationsEnabled}
-              value={priceDropNotificationsEnabled}
-            />
-            <View style={styles.divider} />
-            <SettingRow
-              description="Tell me when a watched item becomes available again."
-              label="Back in stock notifications"
-              onValueChange={setBackInStockNotificationsEnabled}
-              value={backInStockNotificationsEnabled}
-            />
-          </View>
-          <Text style={styles.helperText}>
-            These settings are shown for preview only and are not saved yet.
+          <Text style={styles.preferencesLinkDescription}>
+            Choose how you receive price-change and restock alerts.
           </Text>
-        </View>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-type SettingRowProps = {
-  description: string;
-  label: string;
-  onValueChange: (value: boolean) => void;
-  value: boolean;
-};
-
-function SettingRow({
-  description,
-  label,
-  onValueChange,
-  value,
-}: SettingRowProps) {
-  return (
-    <View style={styles.settingRow}>
-      <View style={styles.settingContent}>
-        <Text style={styles.settingLabel}>{label}</Text>
-        <Text style={styles.settingDescription}>{description}</Text>
-      </View>
-      <Switch
-        accessibilityLabel={label}
-        onValueChange={onValueChange}
-        thumbColor={value ? "#FFFFFF" : "#B8B8B8"}
-        trackColor={{ false: "#4A4A4A", true: "#2E8B57" }}
-        value={value}
-      />
-    </View>
   );
 }
 
@@ -209,26 +174,18 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   emptyText: { color: "#aaa", fontSize: 15, lineHeight: 21 },
-  settingsCard: {
+  preferencesLink: {
     backgroundColor: "#161616",
     borderColor: "#2b2b2b",
     borderRadius: 12,
     borderWidth: 1,
-    paddingHorizontal: 16,
+    padding: 16,
   },
-  settingRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    paddingVertical: 16,
-  },
-  settingContent: { flex: 1, paddingRight: 12 },
-  settingLabel: {
+  preferencesLinkText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
   },
-  settingDescription: { color: "#aaa", fontSize: 14, lineHeight: 20 },
-  divider: { backgroundColor: "#2b2b2b", height: 1 },
-  helperText: { color: "#888", fontSize: 13, lineHeight: 19, marginTop: 10 },
+  preferencesLinkDescription: { color: "#aaa", fontSize: 14, lineHeight: 20 },
 });

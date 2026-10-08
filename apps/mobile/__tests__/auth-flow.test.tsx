@@ -11,9 +11,12 @@ describe("local authentication prototype", () => {
       <LoginScreen onLogin={onLogin} onCreateAccount={jest.fn()} />,
     );
 
-    fireEvent.changeText(screen.getByLabelText("Username"), "quickcop_user");
-    fireEvent.changeText(screen.getByLabelText("Password"), "password123");
-    fireEvent.press(screen.getByRole("button", { name: "Log in" }));
+    await fireEvent.changeText(
+      screen.getByLabelText("Username"),
+      "quickcop_user",
+    );
+    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.press(screen.getByRole("button", { name: "Log in" }));
 
     expect(onLogin).toHaveBeenCalledTimes(1);
   });
@@ -27,10 +30,18 @@ describe("local authentication prototype", () => {
       />,
     );
 
-    fireEvent.changeText(screen.getByLabelText("Email"), "person@example.com");
-    fireEvent.changeText(screen.getByLabelText("Username"), "quickcop_user");
-    fireEvent.changeText(screen.getByLabelText("Password"), "password123");
-    fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    await fireEvent.changeText(
+      screen.getByLabelText("Email"),
+      "person@example.com",
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Username"),
+      "quickcop_user",
+    );
+    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Create account" }),
+    );
 
     expect(onAccountCreated).toHaveBeenCalledTimes(1);
   });
@@ -44,13 +55,18 @@ describe("local authentication prototype", () => {
       />,
     );
 
-    fireEvent.changeText(
+    await fireEvent.changeText(
       screen.getByLabelText("Phone number (optional)"),
       "555-0100",
     );
-    fireEvent.changeText(screen.getByLabelText("Username"), "quickcop_user");
-    fireEvent.changeText(screen.getByLabelText("Password"), "password123");
-    fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    await fireEvent.changeText(
+      screen.getByLabelText("Username"),
+      "quickcop_user",
+    );
+    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Create account" }),
+    );
 
     expect(onAccountCreated).not.toHaveBeenCalled();
     expect(
@@ -60,9 +76,12 @@ describe("local authentication prototype", () => {
 
   it("returns to login when the user logs out from the empty home screen", async () => {
     const onLogout = jest.fn();
-    const screen = await render(<HomeScreen onLogout={onLogout} />);
+    const screen = await render(
+      <HomeScreen onLogout={onLogout} onOpenNotifications={jest.fn()} />,
+    );
 
-    fireEvent.press(screen.getByRole("button", { name: "Log out" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Open menu" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Log out" }));
 
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
