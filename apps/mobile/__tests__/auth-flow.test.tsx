@@ -53,8 +53,14 @@ describe("login", () => {
       <LoginScreen onLogin={onLogin} onCreateAccount={jest.fn()} />,
     );
 
-    await fireEvent.changeText(screen.getByLabelText("Username"), "quickcop_user");
-    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.changeText(
+      screen.getByLabelText("Username"),
+      "quickcop_user",
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Password"),
+      "password123",
+    );
     await fireEvent.press(screen.getByRole("button", { name: "Log in" }));
 
     return { screen, onLogin };
@@ -108,10 +114,21 @@ describe("create account", () => {
       />,
     );
 
-    await fireEvent.changeText(screen.getByLabelText("Email"), "person@example.com");
-    await fireEvent.changeText(screen.getByLabelText("Username"), "quickcop_user");
-    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
-    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    await fireEvent.changeText(
+      screen.getByLabelText("Email"),
+      "person@example.com",
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Username"),
+      "quickcop_user",
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Password"),
+      "password123",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Create account" }),
+    );
 
     return { screen, onAccountCreated };
   }
@@ -155,7 +172,9 @@ describe("create account", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText("Check your email to confirm your account, then log in."),
+        screen.getByText(
+          "Check your email to confirm your account, then log in.",
+        ),
       ).toBeTruthy(),
     );
     expect(onAccountCreated).not.toHaveBeenCalled();
