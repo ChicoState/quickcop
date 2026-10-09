@@ -46,9 +46,7 @@ describe("AccountInfoScreen", () => {
       "valueChange",
       true,
     );
-    await fireEvent.press(
-      screen.getByRole("button", { name: "Save changes" }),
-    );
+    await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith({
@@ -72,9 +70,7 @@ describe("AccountInfoScreen", () => {
 
     await fireEvent.changeText(screen.getByLabelText("Username"), " ");
     await fireEvent.changeText(screen.getByLabelText("Email"), "not-an-email");
-    await fireEvent.press(
-      screen.getByRole("button", { name: "Save changes" }),
-    );
+    await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
 
     expect(screen.getByText("Enter a username.")).toBeTruthy();
     expect(screen.getByText("Enter a valid email address.")).toBeTruthy();

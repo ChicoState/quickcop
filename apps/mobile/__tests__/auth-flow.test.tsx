@@ -15,7 +15,10 @@ describe("local authentication prototype", () => {
       screen.getByLabelText("Username"),
       "quickcop_user",
     );
-    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.changeText(
+      screen.getByLabelText("Password"),
+      "password123",
+    );
     await fireEvent.press(screen.getByRole("button", { name: "Log in" }));
 
     expect(onLogin).toHaveBeenCalledTimes(1);
@@ -38,7 +41,10 @@ describe("local authentication prototype", () => {
       screen.getByLabelText("Username"),
       "quickcop_user",
     );
-    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.changeText(
+      screen.getByLabelText("Password"),
+      "password123",
+    );
     await fireEvent.press(
       screen.getByRole("button", { name: "Create account" }),
     );
@@ -63,7 +69,10 @@ describe("local authentication prototype", () => {
       screen.getByLabelText("Username"),
       "quickcop_user",
     );
-    await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
+    await fireEvent.changeText(
+      screen.getByLabelText("Password"),
+      "password123",
+    );
     await fireEvent.press(
       screen.getByRole("button", { name: "Create account" }),
     );
