@@ -18,7 +18,7 @@ jest.mock("../lib/supabase", () => ({
 }));
 
 // Loosely typed so the mocks accept any resolved value
-type MockFn = jest.Mock<(...args: any[]) => any>;
+type MockFn = jest.Mock<(...args: unknown[]) => Promise<unknown>>;
 
 const mockSupabase = supabase as unknown as {
   rpc: MockFn;
