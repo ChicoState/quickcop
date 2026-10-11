@@ -9,6 +9,8 @@ import {
   View,
 } from "react-native";
 
+import { supabase } from "../../lib/supabase";
+
 type HomeScreenProps = {
   onLogout: () => void;
   onOpenNotifications: () => void;
@@ -23,6 +25,11 @@ export function HomeScreen({
   const [menuOpen, setMenuOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [storesOpen, setStoresOpen] = useState(false);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    onLogout();
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -105,7 +112,7 @@ export function HomeScreen({
               <Text style={styles.menuItem}>Settings</Text>
             </Pressable>
 
-            <Pressable accessibilityRole="button" onPress={onLogout}>
+            <Pressable accessibilityRole="button" onPress={handleLogout}>
               <Text style={styles.logoutMenuItem}>Log out</Text>
             </Pressable>
           </View>

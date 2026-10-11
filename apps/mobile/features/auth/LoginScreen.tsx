@@ -9,6 +9,7 @@ import {
   TextInput,
 } from "react-native";
 
+import { supabase } from "../../lib/supabase";
 import { authStyles } from "./styles";
 
 type LoginScreenProps = {
@@ -16,18 +17,57 @@ type LoginScreenProps = {
   onLogin: () => void;
 };
 
+const INVALID_MESSAGE = "Invalid username or password.";
+
 export function LoginScreen({ onCreateAccount, onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin() {
-    if (!username.trim() || !password) {
+  async function handleLogin() {
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername || !password) {
       setError("Enter your username and password to continue.");
       return;
     }
 
     setError("");
+    setLoading(true);
+
+    // 1. Look up the email that belongs to this username
+    const { data: email, error: lookupError } = await supabase.rpc(
+      "get_email_for_username",
+      { p_username: trimmedUsername },
+    );
+
+    if (lookupError) {
+      console.log("get_email_for_username error:", lookupError);
+      setLoading(false);
+      setError("Something went wrong. Try again.");
+      return;
+    }
+
+    if (!email) {
+      setLoading(false);
+      setError(INVALID_MESSAGE); // same message on purpose
+      return;
+    }
+
+    // 2. Sign in with that email + the password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+
+    if (signInError) {
+      console.log("signIn error:", signInError.message);
+      setError(INVALID_MESSAGE);
+      return;
+    }
+
     onLogin();
   }
 
@@ -86,10 +126,14 @@ export function LoginScreen({ onCreateAccount, onLogin }: LoginScreenProps) {
 
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: loading }}
+            disabled={loading}
             onPress={handleLogin}
-            style={authStyles.button}
+            style={[authStyles.button, loading && { opacity: 0.6 }]}
           >
-            <Text style={authStyles.buttonText}>Log in</Text>
+            <Text style={authStyles.buttonText}>
+              {loading ? "Logging in..." : "Log in"}
+            </Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
