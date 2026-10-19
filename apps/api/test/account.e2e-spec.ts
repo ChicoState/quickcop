@@ -1,0 +1,156 @@
+import { INestApplication } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+import { createClient } from "@supabase/supabase-js";
+import request from "supertest";
+import { AppModule } from "../src/app.module";
+import { configureApp } from "../src/app.setup";
+
+jest.setTimeout(120_000);
+
+const URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
+const ANON = process.env.SUPABASE_ANON_KEY!;
+const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
+const anon = createClient(URL, ANON, { auth: { persistSession: false } });
+
+async function createUser(label: string) {
+  const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const email = `${label}${suffix}@example.com`;
+  const username = `${label}_${suffix}`.slice(0, 30);
+
+  const created = await admin.auth.admin.createUser({
+    email,
+    password: "password123",
+    email_confirm: true,
+    user_metadata: { username },
+  });
+  if (created.error) throw created.error;
+
+  const { data, error } = await anon.auth.signInWithPassword({
+    email,
+    password: "password123",
+  });
+  if (error || !data.session) throw error;
+
+  return { id: created.data.user.id, username, token: data.session.access_token };
+}
+
+async function buildApp() {
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+  const app = configureApp(moduleRef.createNestApplication());
+  await app.init();
+  return app;
+}
+
+describe("account API", () => {
+  let app: INestApplication;
+  let userA: Awaited<ReturnType<typeof createUser>>;
+  let userB: Awaited<ReturnType<typeof createUser>>;
+
+beforeAll(async () => {
+  app = await buildApp();
+  userA = await createUser("usera");
+  userB = await createUser("userb");
+}, 120_000);
+
+afterAll(async () => {
+  await app?.close();
+  if (userA) await admin.auth.admin.deleteUser(userA.id);
+  if (userB) await admin.auth.admin.deleteUser(userB.id);
+}, 60_000);
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+  it("rejects a request with no token", async () => {
+    await request(app.getHttpServer()).get("/account").expect(401);
+  });
+
+  it("rejects an invalid token", async () => {
+    await request(app.getHttpServer())
+      .get("/account")
+      .set(auth("garbage"))
+      .expect(401);
+  });
+
+  it("returns only the caller's own account", async () => {
+    await request(app.getHttpServer())
+      .patch("/account/profile")
+      .set(auth(userA.token))
+      .send({ displayName: "Alice" })
+      .expect(200);
+    await request(app.getHttpServer())
+      .patch("/account/profile")
+      .set(auth(userB.token))
+      .send({ displayName: "Bob" })
+      .expect(200);
+
+    const a = await request(app.getHttpServer())
+      .get("/account")
+      .set(auth(userA.token))
+      .expect(200);
+    const b = await request(app.getHttpServer())
+      .get("/account")
+      .set(auth(userB.token))
+      .expect(200);
+
+    expect(a.body.profile.displayName).toBe("Alice");
+    expect(a.body.profile.username).toBe(userA.username);
+    expect(b.body.profile.displayName).toBe("Bob");
+    expect(b.body.profile.username).toBe(userB.username);
+  });
+
+  it("cannot target another user by sending an id", async () => {
+    await request(app.getHttpServer())
+      .patch("/account/profile")
+      .set(auth(userA.token))
+      .send({ id: userB.id, displayName: "Hacked" })
+      .expect(400);
+
+    const b = await request(app.getHttpServer())
+      .get("/account")
+      .set(auth(userB.token))
+      .expect(200);
+    expect(b.body.profile.displayName).toBe("Bob");
+  });
+
+  it("returns 409 for a duplicate username, ignoring case", async () => {
+    await request(app.getHttpServer())
+      .patch("/account/profile")
+      .set(auth(userA.token))
+      .send({ username: userB.username.toUpperCase() })
+      .expect(409);
+  });
+
+  it("returns 400 for invalid notification fields", async () => {
+    await request(app.getHttpServer())
+      .patch("/account/notification-preferences")
+      .set(auth(userA.token))
+      .send({ priceAlerts: "yes" })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch("/account/notification-preferences")
+      .set(auth(userA.token))
+      .send({ foo: true })
+      .expect(400);
+  });
+
+  it("persists updates after the app restarts", async () => {
+    await request(app.getHttpServer())
+      .patch("/account/notification-preferences")
+      .set(auth(userA.token))
+      .send({ priceAlerts: false })
+      .expect(200);
+
+    await app.close();
+    app = await buildApp();
+
+    const res = await request(app.getHttpServer())
+      .get("/account")
+      .set(auth(userA.token))
+      .expect(200);
+    expect(res.body.notificationPreferences.priceAlerts).toBe(false);
+  });
+});
