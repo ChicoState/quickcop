@@ -3,11 +3,9 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { supabase } from "../../lib/supabase";
-
 type HomeScreenProps = {
   onAccountInfo?: () => void;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
   onOpenNotifications: () => void;
   onOpenWatchedItems?: () => void;
 };
@@ -23,8 +21,7 @@ export function HomeScreen({
   const [storesOpen, setStoresOpen] = useState(false);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    onLogout();
+    await onLogout();
   }
 
   return (

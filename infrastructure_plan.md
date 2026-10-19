@@ -19,7 +19,7 @@
 - **Backend required:** Yes. It runs approved partner stock-monitoring integrations, sends notifications, and enforces authorization.
 - **Cross-device persistence:** Hosted, per-account data.
 - **Interaction between accounts:** None.
-- **Primary application components:** Expo Android client, NestJS API and worker process, PostgreSQL, notification provider, payment/wallet integration, and approved partner-retailer APIs.
+- **Primary application components:** Expo Android client, NestJS API and worker process, Supabase-managed PostgreSQL, notification provider, payment/wallet integration, and approved partner-retailer APIs.
 - **Checkout boundary:** Only participating retailers with approved checkout APIs are supported. The app must never automate arbitrary retailer sites or retain raw payment credentials.
 
 ## 3. Selected Technology Stack
@@ -37,23 +37,23 @@
 ## 4. Storage and Persistence
 
 - **Storage model:** Hosted relational storage.
-- **Primary data store:** PostgreSQL for accounts, tracked product URLs/identifiers, availability history, notification preferences, and encrypted delivery addresses.
+- **Primary data store:** Supabase-managed PostgreSQL for accounts, tracked product URLs/identifiers, availability history, notification preferences, and encrypted delivery addresses.
 - **User files or object storage:** Not planned initially; do not persist payment or identity-document files.
-- **Local-development storage:** PostgreSQL Docker service with disposable developer data.
-- **Production hosting model:** Cloud SQL for PostgreSQL with private IP, automated backups, and tested restores. Cloud Run API and worker services connect through private networking with least-privilege service accounts.
-- **Schema and migration approach:** Versioned, reviewed migrations executed once by a controlled release job.
-- **Backup, export, or recovery approach:** Encrypted scheduled backups, tested restores, per-user account/address export and deletion capability, and retention periods approved by counsel.
-- **Secrets and connection-string approach:** Secret manager/environment injection only; no credentials in source, images, logs, or mobile clients.
+- **Local-development storage:** Supabase local development stack managed through the Supabase CLI and Docker, with disposable developer data; Testcontainers may still provide isolated PostgreSQL databases for integration tests.
+- **Production hosting model:** A dedicated Supabase project provides the application PostgreSQL database, managed backups, connection pooling, and private service credentials. Cloud Run API and worker services connect using least-privilege Supabase database credentials over TLS.
+- **Schema and migration approach:** Versioned, reviewed Supabase/PostgreSQL migrations executed once by a controlled release job through the Supabase CLI or migration tooling.
+- **Backup, export, or recovery approach:** Supabase backups and project recovery capabilities, supplemented by tested exports/restores, plus per-user account/address export and deletion capability and retention periods approved by counsel.
+- **Secrets and connection-string approach:** Store the Supabase project URL, publishable client key, server-only service-role key, and database connection credentials in the platform secret manager/GitHub protected environments; no credentials in source, images, logs, or mobile clients.
 - **Payment and address handling:** Do not collect, store, log, or transmit PAN, CVV, or wallet credentials. Use partner-approved Apple Pay/Google Pay, Stripe Link, or equivalent provider flows; retain only provider tokens and minimal transaction references when permitted. Encrypt saved delivery addresses at rest and in transit, authorize per user, audit privileged access, and delete on account deletion.
-- **Reason this storage fits the access pattern:** PostgreSQL supports secure per-account data, transactional alert state, and fast partner checkout preparation.
+- **Reason this storage fits the access pattern:** Supabase provides managed PostgreSQL for secure per-account data, transactional alert state, and fast partner checkout preparation without operating a separate managed database.
 
 ## 5. Testing Tools
 
-| Test layer       | Tool or library                                          | Planned scope                                                                      | Planned execution point                         |
-| ---------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Unit             | Jest and React Native Testing Library                    | Mobile UI, validation, notification presentation                                   | Local and pull requests                         |
-| Integration      | Jest/NestJS test utilities and Testcontainers PostgreSQL | Auth, authorization, encrypted address access, partner adapters, stock transitions | Local and pull requests                         |
-| End-to-end or UI | Maestro                                                  | Android onboarding, alert receipt, and approved checkout handoff                   | Pull requests when practical; release candidate |
+| Test layer       | Tool or library                                                                        | Planned scope                                                                      | Planned execution point                         |
+| ---------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Unit             | Jest and React Native Testing Library                                                  | Mobile UI, validation, notification presentation                                   | Local and pull requests                         |
+| Integration      | Jest/NestJS test utilities, Testcontainers PostgreSQL, and Supabase test configuration | Auth, authorization, encrypted address access, partner adapters, stock transitions | Local and pull requests                         |
+| End-to-end or UI | Maestro                                                                                | Android onboarding, alert receipt, and approved checkout handoff                   | Pull requests when practical; release candidate |
 
 ## 6. Test Analysis
 
@@ -67,48 +67,49 @@
 
 ## 7. Static Analysis and Security
 
-| Check                                    | Tool                                              | Planned enforcement                                            |
-| ---------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------- |
-| Formatting                               | Prettier                                          | Verify on pull requests                                        |
-| Linting                                  | ESLint                                            | Block pull requests                                            |
-| Type checking or compiler warnings       | TypeScript compiler                               | Block pull requests with strict settings                       |
-| Anti-pattern or maintainability analysis | ESLint rules and Semgrep                          | Block high-confidence findings; tune reviewed false positives  |
-| Dependency vulnerability scanning        | Dependabot and npm audit/compatible advisory scan | Dependabot updates; block actionable high/critical findings    |
-| Secret scanning                          | GitHub secret scanning and Gitleaks               | Block detected secrets; rotate exposed credentials immediately |
-| Static security analysis                 | CodeQL and Semgrep                                | CodeQL scheduled and on relevant PRs; Semgrep on PRs           |
-| Container scanning                       | Trivy                                             | Scan production API and PostgreSQL images before release       |
+| Check                                    | Tool                                              | Planned enforcement                                                                    |
+| ---------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Formatting                               | Prettier                                          | Verify on pull requests                                                                |
+| Linting                                  | ESLint                                            | Block pull requests                                                                    |
+| Type checking or compiler warnings       | TypeScript compiler                               | Block pull requests with strict settings                                               |
+| Anti-pattern or maintainability analysis | ESLint rules and Semgrep                          | Block high-confidence findings; tune reviewed false positives                          |
+| Dependency vulnerability scanning        | Dependabot and npm audit/compatible advisory scan | Dependabot updates; block actionable high/critical findings                            |
+| Secret scanning                          | GitHub secret scanning and Gitleaks               | Block detected secrets; rotate exposed credentials immediately                         |
+| Static security analysis                 | CodeQL and Semgrep                                | CodeQL scheduled and on relevant PRs; Semgrep on PRs                                   |
+| Container scanning                       | Trivy                                             | Scan the production API/worker image and any released supporting images before release |
 
 ## 8. Development Technologies Requiring Manual Installation
 
 These are developer-workstation prerequisites that will not be supplied by the planned Docker environment.
 
-| Technology                                            | Why it is needed                              | Required on which machines                   | Version policy                    | Planned installation or verification method | Why Docker does not provide it                       |
-| ----------------------------------------------------- | --------------------------------------------- | -------------------------------------------- | --------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
-| Git                                                   | Source control                                | All developer machines                       | Supported stable                  | Future documented setup check               | Developer host tool                                  |
-| Node.js LTS and npm                                   | Expo tooling and local client development     | All developer machines                       | Supported LTS                     | Future version check                        | Mobile tooling runs on host                          |
-| Android Studio and Android SDK                        | Emulator, debugging, and Android builds       | Android app developers                       | Play-compatible supported version | Future documented setup check               | Requires host emulator/device integration            |
-| Java JDK required by Gradle                           | Android builds                                | Android app developers and Android CI runner | Expo/Gradle-compatible LTS        | Future documented setup check               | Native Android toolchain dependency                  |
-| Docker Desktop/Engine                                 | Planned local backend and database containers | Backend developers                           | Supported stable                  | Future documented setup check               | It is the local container runtime                    |
-| Google Play developer account and signing credentials | Store publishing                              | Release owner/secure CI                      | Current Play requirements         | Obtain before release                       | Account-held credentials cannot be baked into Docker |
+| Technology                                            | Why it is needed                                             | Required on which machines                   | Version policy                    | Planned installation or verification method | Why Docker does not provide it                       |
+| ----------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------- | --------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
+| Git                                                   | Source control                                               | All developer machines                       | Supported stable                  | Future documented setup check               | Developer host tool                                  |
+| Node.js LTS and npm                                   | Expo tooling and local client development                    | All developer machines                       | Supported LTS                     | Future version check                        | Mobile tooling runs on host                          |
+| Android Studio and Android SDK                        | Emulator, debugging, and Android builds                      | Android app developers                       | Play-compatible supported version | Future documented setup check               | Requires host emulator/device integration            |
+| Java JDK required by Gradle                           | Android builds                                               | Android app developers and Android CI runner | Expo/Gradle-compatible LTS        | Future documented setup check               | Native Android toolchain dependency                  |
+| Supabase CLI                                          | Start the local Supabase stack and apply reviewed migrations | Backend developers and release CI            | Supported stable                  | Future documented setup check               | The CLI coordinates Supabase services and migrations |
+| Docker Desktop/Engine                                 | Runs local NestJS and Supabase services                      | Backend developers                           | Supported stable                  | Future documented setup check               | It is the local container runtime                    |
+| Google Play developer account and signing credentials | Store publishing                                             | Release owner/secure CI                      | Current Play requirements         | Obtain before release                       | Account-held credentials cannot be baked into Docker |
 
 ### Host tools intentionally not required
 
-- **Not required because Docker supplies them:** Production-like NestJS runtime and local PostgreSQL service.
+- **Not required because Docker supplies them:** Production-like NestJS runtime and the Supabase local service containers.
 - **Not required for this platform:** Xcode, iOS SDK, Apple signing/notarization tools, and desktop packaging SDKs.
 
 ## 9. Docker Plan
 
-- **Planned Docker role:** Local development for the NestJS backend and PostgreSQL; containerized API/worker deployment to Cloud Run.
-- **Future files that would be created during implementation:** API Dockerfile, PostgreSQL service definition, Compose configuration, `.dockerignore`, and environment templates.
-- **Planned images and services:** Local multi-stage non-root NestJS API/worker image and version-pinned PostgreSQL image; Cloud Run deploys the API/worker image and Cloud SQL supplies production PostgreSQL.
-- **Development container behavior:** API and database run as separate services; source bind mount only for development; database data uses a named volume.
-- **Ports:** Bind database only to the internal Docker network; expose API only through a TLS-capable reverse proxy/gateway.
-- **Bind mounts and named volumes:** Named persistent PostgreSQL volume; avoid mounting host secrets or production data.
+- **Planned Docker role:** Local development for the NestJS backend and Supabase local services; containerized API/worker deployment to Cloud Run.
+- **Future files that would be created during implementation:** API Dockerfile, Supabase local configuration, Compose/Supabase CLI configuration, `.dockerignore`, and environment templates.
+- **Planned images and services:** Local multi-stage non-root NestJS API/worker image alongside the Supabase local stack; Cloud Run deploys the API/worker image and the dedicated Supabase project supplies production PostgreSQL.
+- **Development container behavior:** API and Supabase local services run as separate services; source bind mount only for development; local database data is disposable and never reused for production.
+- **Ports:** Bind local Supabase services and the API only to localhost or the local development network; expose production API only through a TLS-capable reverse proxy/gateway.
+- **Bind mounts and named volumes:** Use Supabase-managed local volumes only for disposable development data; avoid mounting host secrets or production data.
 - **Environment-variable and secret handling:** Inject runtime secrets from the platform secret manager; never copy `.env` files or credentials into images.
-- **Local database or service containers:** PostgreSQL only; use Testcontainers for isolated integration-test databases.
-- **Production image or non-container release path:** Publish scanned API/worker image to Artifact Registry and deploy separate Cloud Run API and worker services with `min-instances` at least 1; use Cloud SQL private IP. Android artifact is built on a native Android runner and published separately.
+- **Local database or service containers:** Supabase local stack for development; use Testcontainers for isolated integration-test databases.
+- **Production image or non-container release path:** Publish scanned API/worker image to Artifact Registry and deploy separate Cloud Run API and worker services with `min-instances` at least 1; connect to the dedicated Supabase project over TLS. Android artifact is built on a native Android runner and published separately.
 - **Build stages and hardening:** Multi-stage build, minimal runtime base, non-root users, `.dockerignore`, pinned bases, health checks, read-only filesystem where compatible, and no embedded secrets.
-- **Planned future development command:** `docker compose up` (future only; do not run during planning).
+- **Planned future development command:** `supabase start` (future only; do not run during planning).
 - **Planned future production command:** Deployment-platform-specific image rollout command (future only; select before implementation).
 
 ## 10. GitHub Actions Plan
@@ -137,7 +138,7 @@ These are developer-workstation prerequisites that will not be supplied by the p
 
 - **Future workflow file:** `.github/workflows/release.yml`
 - **Release trigger:** Protected `v*` tag or `workflow_dispatch` with an explicit release version.
-- **Release destination:** Google Play Store production track, Cloud Run API and worker services (each `min-instances` ≥ 1), and Cloud SQL for PostgreSQL with private IP and automated backups.
+- **Release destination:** Google Play Store production track, Cloud Run API and worker services (each `min-instances` ≥ 1), and a dedicated Supabase project providing the production PostgreSQL database with managed backups.
 - **Runner or matrix:** Ubuntu for container build/scan; Android-compatible native runner for signed Android artifact.
 - **Planned jobs in order:**
   1. Re-run lockfile install, static checks, tests, coverage gate, Android/API build validation, and container scan.
@@ -153,18 +154,21 @@ These are developer-workstation prerequisites that will not be supplied by the p
 
 ### GitHub configuration required later
 
-| Name                                        | Type                         | Purpose                                                          |
-| ------------------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`          | Secret                       | Authenticate CI publishing to Google Play                        |
-| `ANDROID_SIGNING_KEY` and signing passwords | Secrets                      | Sign Android release artifacts                                   |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER`            | GitHub variable              | Google Cloud Workload Identity Federation provider resource name |
-| `GCP_SERVICE_ACCOUNT`                       | GitHub variable              | Least-privilege deployer service-account email                   |
-| `GCP_PROJECT_ID` and `GCP_REGION`           | GitHub variables             | Target Artifact Registry, Cloud Run, and Cloud SQL location      |
-| `CLOUD_SQL_INSTANCE`                        | GitHub variable              | Production Cloud SQL instance connection identifier              |
-| `DATABASE_URL` and encryption-key material  | Secrets                      | Connect securely and encrypt protected address fields            |
-| Partner API credentials                     | Secrets                      | Access approved inventory and checkout integrations              |
-| `production`                                | Protected GitHub environment | Require approval and scope production secrets                    |
-| Google Play Console account                 | Account                      | Own Android distribution and release controls                    |
+| Name                                                 | Type                         | Purpose                                                           |
+| ---------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`                   | Secret                       | Authenticate CI publishing to Google Play                         |
+| `ANDROID_SIGNING_KEY` and signing passwords          | Secrets                      | Sign Android release artifacts                                    |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER`                     | GitHub variable              | Google Cloud Workload Identity Federation provider resource name  |
+| `GCP_SERVICE_ACCOUNT`                                | GitHub variable              | Least-privilege deployer service-account email                    |
+| `GCP_PROJECT_ID` and `GCP_REGION`                    | GitHub variables             | Target Artifact Registry and Cloud Run location                   |
+| `SUPABASE_PROJECT_REF` and `SUPABASE_URL`            | GitHub variables             | Identify the dedicated Supabase project and API endpoint          |
+| `SUPABASE_PUBLISHABLE_KEY`                           | Variable                     | Configure the mobile client with Supabase's non-secret client key |
+| `SUPABASE_ACCESS_TOKEN`                              | Secret                       | Authenticate protected Supabase CLI migration operations          |
+| `SUPABASE_SERVICE_ROLE_KEY` and database credentials | Secrets                      | Server-side Supabase access and controlled migration connectivity |
+| Encryption-key material                              | Secret                       | Encrypt protected address fields                                  |
+| Partner API credentials                              | Secrets                      | Access approved inventory and checkout integrations               |
+| `production`                                         | Protected GitHub environment | Require approval and scope production secrets                     |
+| Google Play Console account                          | Account                      | Own Android distribution and release controls                     |
 
 ## 11. Planned Repository Artifacts - Not Created by This Skill
 
@@ -179,5 +183,5 @@ These are developer-workstation prerequisites that will not be supplied by the p
 ## 12. Assumptions and Open Items
 
 - **Assumptions:** First launch is U.S.-only; only partner retailers with approved APIs are supported; Android is the sole initial client; user confirmation via a supported wallet/provider remains required for payment authorization.
-- **Decisions still requiring an external account, credential, certificate, or organizational approval:** Partner agreements/API access, payment-provider onboarding, Google Cloud project and Workload Identity Federation setup, Cloud Run/Cloud SQL service accounts, Google Play developer account, Android signing, push-notification provider, encryption-key management, and legal/privacy review.
+- **Decisions still requiring an external account, credential, certificate, or organizational approval:** Supabase organization/project and backup plan, partner agreements/API access, payment-provider onboarding, Google Cloud project and Workload Identity Federation setup, Cloud Run service accounts, Google Play developer account, Android signing, push-notification provider, encryption-key management, and legal/privacy review.
 - **Items to confirm before implementation begins:** Exact supported retailers and checkout contracts; provider for Android wallet/payment authorization; target Android OS range; address retention period; privacy policy, consent, deletion/export flow, incident response, and applicable U.S./California legal obligations.

@@ -9,66 +9,60 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { supabase } from "../../lib/supabase";
 import { authStyles } from "./styles";
+import { signInWithEmail } from "./authService";
 
 type LoginScreenProps = {
+  initialNotice?: string;
   onCreateAccount: () => void;
   onLogin: () => void;
 };
 
-const INVALID_MESSAGE = "Invalid username or password.";
+const INVALID_MESSAGE = "Invalid email or password.";
+const SERVICE_MESSAGE =
+  "Authentication is temporarily unavailable. Try again later.";
 
-export function LoginScreen({ onCreateAccount, onLogin }: LoginScreenProps) {
-  const [username, setUsername] = useState("");
+export function LoginScreen({
+  initialNotice,
+  onCreateAccount,
+  onLogin,
+}: LoginScreenProps) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState(initialNotice ?? "");
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
-    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim().toLowerCase();
 
-    if (!trimmedUsername || !password) {
-      setError("Enter your username and password to continue.");
+    if (!trimmedEmail || !password) {
+      setError("Enter your email and password to continue.");
       return;
     }
 
     setError("");
+    setNotice("");
     setLoading(true);
 
-    // 1. Look up the email that belongs to this username
-    const { data: email, error: lookupError } = await supabase.rpc(
-      "get_email_for_username",
-      { p_username: trimmedUsername },
-    );
+    try {
+      const result = await signInWithEmail(trimmedEmail, password);
 
-    if (lookupError) {
-      console.log("get_email_for_username error:", lookupError);
+      if (!result.ok) {
+        setError(
+          result.failure.kind === "network"
+            ? "Unable to connect. Try again."
+            : result.failure.kind === "credentials"
+              ? INVALID_MESSAGE
+              : SERVICE_MESSAGE,
+        );
+        return;
+      }
+
+      onLogin();
+    } finally {
       setLoading(false);
-      setError("Something went wrong. Try again.");
-      return;
     }
-
-    if (!email) {
-      setLoading(false);
-      setError(INVALID_MESSAGE); // same message on purpose
-      return;
-    }
-
-    // 2. Sign in with that email + the password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-
-    if (signInError) {
-      console.log("signIn error:", signInError.message);
-      setError(INVALID_MESSAGE);
-      return;
-    }
-
-    onLogin();
   }
 
   return (
@@ -87,17 +81,23 @@ export function LoginScreen({ onCreateAccount, onLogin }: LoginScreenProps) {
           <Text style={authStyles.subtitle}>
             Log in to continue to QuickCop.
           </Text>
+          {notice ? (
+            <Text accessibilityLiveRegion="polite" style={authStyles.subtitle}>
+              {notice}
+            </Text>
+          ) : null}
 
-          <Text style={authStyles.label}>Username</Text>
+          <Text style={authStyles.label}>Email</Text>
           <TextInput
-            accessibilityLabel="Username"
+            accessibilityLabel="Email"
             autoCapitalize="none"
             autoCorrect={false}
-            onChangeText={setUsername}
-            placeholder="Your username"
+            keyboardType="email-address"
+            onChangeText={setEmail}
+            placeholder="you@example.com"
             placeholderTextColor="#7A7A7A"
             style={authStyles.input}
-            value={username}
+            value={email}
           />
 
           <Text style={[authStyles.label, authStyles.passwordLabel]}>

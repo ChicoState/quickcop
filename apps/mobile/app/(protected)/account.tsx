@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { AccountInfoScreen } from "../features/account/AccountInfoScreen";
-import type { AccountInfo } from "../features/account/types";
+import { AccountInfoScreen } from "../../features/account/AccountInfoScreen";
+import type { AccountInfo } from "../../features/account/types";
 
 const prototypeAccount: AccountInfo = {
   email: "shopper@example.com",

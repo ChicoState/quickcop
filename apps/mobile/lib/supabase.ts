@@ -1,16 +1,33 @@
 import "react-native-url-polyfill/auto";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-export const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL!,
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      storage: AsyncStorage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-  },
-);
+import { secureStorage } from "./secureStorage";
+import {
+  readSupabaseConfig,
+  type SupabaseConfig,
+  SupabaseConfigurationError,
+} from "./supabaseConfig";
+
+let config: SupabaseConfig | null = null;
+export let supabaseConfigError: SupabaseConfigurationError | null = null;
+
+try {
+  config = readSupabaseConfig();
+} catch (error) {
+  if (error instanceof SupabaseConfigurationError) {
+    supabaseConfigError = error;
+  } else {
+    throw error;
+  }
+}
+
+export const supabase: SupabaseClient | null = config
+  ? createClient(config.url, config.publishableKey, {
+      auth: {
+        storage: secureStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    })
+  : null;
