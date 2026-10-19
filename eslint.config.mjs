@@ -2,7 +2,9 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default [
-  { ignores: ["coverage/**", "node_modules/**", "dist/**"] },
+  {
+    ignores: ["coverage/**", "node_modules/**", "dist/**", "apps/api/dist/**"],
+  },
   {
     files: ["**/*.cjs"],
     languageOptions: { globals: { module: "readonly" } },

@@ -1,6 +1,6 @@
 # QuickCop
 
-Android-first stock tracking and partner-retailer checkout is planned here. The repository currently contains its development infrastructure only; no mobile app, NestJS API, authentication, product model, or checkout behavior has been implemented.
+Android-first stock tracking and partner-retailer checkout is planned here. The repository includes an Expo mobile foundation and a minimal NestJS product-preview API; authentication, persistence, stock monitoring, and checkout behavior remain unimplemented.
 
 ## Repository map
 
@@ -8,11 +8,11 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
 - `package.json`, `tsconfig.json`, `eslint.config.mjs`, Jest and Stryker configuration — shared TypeScript quality harness.
 - `compose.yaml`, `docker/` — local PostgreSQL and future API image configuration.
 - `scripts/smoke-postgres.sh` — disposable PostgreSQL readiness/`SELECT 1` smoke test.
-- `tests/` — empty unit and integration test locations for future application tests.
+- `tests/` — unit and integration test locations, including product-preview tests.
 - `.github/workflows/` — pull-request checks and guarded release prerequisite workflow.
 - `.agents/skills/` — project-supplied agent guidance.
 - `apps/mobile` — Expo/React Native Android foundation with local-only login and account-creation UI.
-- `apps/api` — not created yet; application implementation owns it.
+- `apps/api` — NestJS product-preview API.
 
 ## Getting Started
 
@@ -51,6 +51,24 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
 ## Mobile app
 
 The initial Android UI is in `apps/mobile`. It does not authenticate or persist data yet. With Node.js 22.14.0, an Android SDK/emulator, and its locked dependencies installed, run `cd apps/mobile && npm run android:run` to compile and launch the debug app. Run `npm run android` instead when using Expo Go on a running emulator, and `npm test -- --runInBand` for component tests.
+
+## Product-preview API
+
+Start the local API with:
+
+```bash
+npm run api:start
+```
+
+It listens on port `3000` and accepts a product page URL:
+
+```bash
+curl --request POST http://localhost:3000/product-previews \
+  --header 'content-type: application/json' \
+  --data '{"url":"https://www.nike.com/t/jaxon-smith-njigba-seattle-seahawks-mens-nike-nfl-game-jersey-rx8b02/67NM03LD78F-00T"}'
+```
+
+On pages with public JSON-LD product metadata, it responds with `name`, integer `priceCents`, ISO `currency`, and `sourceUrl`. It only fetches public HTTPS URLs, refuses redirects and oversized/non-HTML responses, and returns a structured error when a page has no usable product metadata. Retailer pages that require JavaScript or block requests are not supported by this minimal scraper.
 
 ## Docker and deployment boundary
 
