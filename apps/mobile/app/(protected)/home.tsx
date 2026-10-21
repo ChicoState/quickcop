@@ -11,7 +11,12 @@ export default function HomeRoute() {
     <HomeScreen
       onAccountInfo={() => router.push("/(protected)/account")}
       onLogout={async () => {
-        const result = await logout();
+        let result = { ok: false };
+        try {
+          result = await logout();
+        } catch {
+          // Keep the local route transition recoverable if logout unexpectedly throws.
+        }
         router.replace({
           pathname: "/(public)",
           params: result.ok ? undefined : { logout: "failed" },

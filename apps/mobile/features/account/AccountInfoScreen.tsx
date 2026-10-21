@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AccountSaveError } from "../api/accountClient";
+import { normalizeNotificationPreferences } from "./types";
 import type {
   AccountInfo,
   AlertType,
@@ -43,8 +45,8 @@ function preferenceLabel(alertType: AlertType, channel: DeliveryChannel) {
 export function AccountInfoScreen({ account, onSave }: AccountInfoScreenProps) {
   const [email, setEmail] = useState(account.email);
   const [phone, setPhone] = useState(account.phone ?? "");
-  const [preferences, setPreferences] = useState<NotificationPreferences>(
-    account.notificationPreferences,
+  const [preferences, setPreferences] = useState<NotificationPreferences>(() =>
+    normalizeNotificationPreferences(account.notificationPreferences),
   );
   const [username, setUsername] = useState(account.username);
   const [errors, setErrors] = useState<string[]>([]);
@@ -95,9 +97,17 @@ export function AccountInfoScreen({ account, onSave }: AccountInfoScreenProps) {
         phone: phone.trim() || null,
         username: normalizedUsername,
       });
-      setSaveMessage("Changes saved for this session.");
-    } catch {
-      setSaveMessage("We could not save your changes. Try again.");
+      setSaveMessage(
+        normalizedEmail !== account.email
+          ? "Saved. Check your email to confirm the new address."
+          : "Changes saved.",
+      );
+    } catch (error) {
+      setSaveMessage(
+        error instanceof AccountSaveError
+          ? error.message
+          : "We could not save your changes. Try again.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -277,7 +287,7 @@ function Toggle({
       <Switch
         accessibilityLabel={label}
         onValueChange={(value) => onValueChange(alertType, channel, value)}
-        value={preferences[alertType][channel]}
+        value={preferences[alertType]?.[channel] ?? false}
       />
     </View>
   );

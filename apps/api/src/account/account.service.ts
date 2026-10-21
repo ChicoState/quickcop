@@ -3,19 +3,43 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-} from "@nestjs/common";
-import { SupabaseService } from "../supabase/supabase.service";
-import { UpdatePreferencesDto, UpdateProfileDto } from "./dto";
+} from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
+import { UpdatePreferencesDto, UpdateProfileDto } from './dto';
 
-const toProfile = (r: any) => ({
-  username: r.username,
-  displayName: r.display_name,
-  phone: r.phone,
+type ProfileRow = {
+  username: string;
+  display_name: string | null;
+  phone: string | null;
+};
+
+type PreferencesRow = {
+  restock_push: boolean;
+  restock_email: boolean;
+  price_change_push: boolean;
+  price_change_email: boolean;
+};
+
+const PROFILE_COLUMNS = 'username, display_name, phone';
+const PREFERENCE_COLUMNS =
+  'restock_push, restock_email, price_change_push, price_change_email';
+
+const toProfile = (row: ProfileRow) => ({
+  username: row.username,
+  displayName: row.display_name,
+  phone: row.phone,
 });
-const toPrefs = (r: any) => ({
-  priceAlerts: r.price_alerts,
-  accountAlerts: r.account_alerts,
+
+const toPrefs = (row: PreferencesRow) => ({
+  restock: { push: row.restock_push, email: row.restock_email },
+  priceChange: { push: row.price_change_push, email: row.price_change_email },
 });
+
+const normalizeOptionalText = (value: string | null | undefined) => {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  return value.trim() || null;
+};
 
 @Injectable()
 export class AccountService {
@@ -27,49 +51,98 @@ export class AccountService {
 
   async get(userId: string) {
     const [profile, prefs] = await Promise.all([
-      this.db.from("profiles").select().eq("id", userId).maybeSingle(),
-      this.db.from("notification_preferences").select().eq("user_id", userId).maybeSingle(),
+      this.db
+        .from('profiles')
+        .select(PROFILE_COLUMNS)
+        .eq('id', userId)
+        .maybeSingle(),
+      this.db
+        .from('notification_preferences')
+        .select(PREFERENCE_COLUMNS)
+        .eq('user_id', userId)
+        .maybeSingle(),
     ]);
     if (profile.error || prefs.error) throw new InternalServerErrorException();
     if (!profile.data || !prefs.data) throw new NotFoundException();
 
     return {
-      profile: toProfile(profile.data),
-      notificationPreferences: toPrefs(prefs.data),
+      profile: toProfile(profile.data as ProfileRow),
+      notificationPreferences: toPrefs(prefs.data as PreferencesRow),
     };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    const { data, error } = await this.db
-      .from("profiles")
-      .update({
-        username: dto.username,
-        display_name: dto.displayName,
-        phone: dto.phone,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId)
-      .select()
-      .single();
+    const updates: Record<string, unknown> = {};
 
-    if (error?.code === "23505") throw new ConflictException("Username is taken.");
-    if (error || !data) throw new InternalServerErrorException();
-    return toProfile(data);
+    if (dto.username !== undefined) {
+      updates.username = dto.username.trim().toLowerCase();
+    }
+    if (dto.displayName !== undefined) {
+      updates.display_name = normalizeOptionalText(dto.displayName);
+    }
+    if (dto.phone !== undefined) {
+      updates.phone = normalizeOptionalText(dto.phone);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      const { data, error } = await this.db
+        .from('profiles')
+        .select(PROFILE_COLUMNS)
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) throw new InternalServerErrorException();
+      if (!data) throw new NotFoundException();
+      return toProfile(data as ProfileRow);
+    }
+
+    const { data, error } = await this.db
+      .from('profiles')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select(PROFILE_COLUMNS)
+      .maybeSingle();
+
+    if (error?.code === '23505')
+      throw new ConflictException('Username is taken.');
+    if (error) throw new InternalServerErrorException();
+    if (!data) throw new NotFoundException();
+    return toProfile(data as ProfileRow);
   }
 
   async updatePreferences(userId: string, dto: UpdatePreferencesDto) {
-    const { data, error } = await this.db
-      .from("notification_preferences")
-      .update({
-        price_alerts: dto.priceAlerts,
-        account_alerts: dto.accountAlerts,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId)
-      .select()
-      .single();
+    const updates: Record<string, unknown> = {};
 
-    if (error || !data) throw new InternalServerErrorException();
-    return toPrefs(data);
+    if (dto.restock?.push !== undefined)
+      updates.restock_push = dto.restock.push;
+    if (dto.restock?.email !== undefined)
+      updates.restock_email = dto.restock.email;
+    if (dto.priceChange?.push !== undefined) {
+      updates.price_change_push = dto.priceChange.push;
+    }
+    if (dto.priceChange?.email !== undefined) {
+      updates.price_change_email = dto.priceChange.email;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      const { data, error } = await this.db
+        .from('notification_preferences')
+        .select(PREFERENCE_COLUMNS)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (error) throw new InternalServerErrorException();
+      if (!data) throw new NotFoundException();
+      return toPrefs(data as PreferencesRow);
+    }
+
+    const { data, error } = await this.db
+      .from('notification_preferences')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .select(PREFERENCE_COLUMNS)
+      .maybeSingle();
+
+    if (error) throw new InternalServerErrorException();
+    if (!data) throw new NotFoundException();
+    return toPrefs(data as PreferencesRow);
   }
 }

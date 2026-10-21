@@ -38,7 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     setAuthState({ status: "unauthenticated" });
-    return signOut();
+    try {
+      return await signOut();
+    } catch {
+      return { ok: false };
+    }
   }, []);
 
   useEffect(() => {

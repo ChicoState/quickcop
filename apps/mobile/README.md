@@ -19,9 +19,10 @@ Set these values in a local, uncommitted `apps/mobile/.env` file:
 ```dotenv
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+EXPO_PUBLIC_API_URL=https://your-api.example.com
 ```
 
-For local Supabase development, use the local project URL appropriate to the emulator (`http://10.0.2.2:54321` for Android). EAS builds should receive the same two public values through EAS environment variables. The app fails closed when either value is missing or invalid.
+For local Supabase development, use the local project URL appropriate to the emulator (`http://10.0.2.2:54321` for Android). For the local API, use `http://10.0.2.2:3000` from Android. EAS builds should receive the public Supabase values and HTTPS API URL through EAS environment variables. The app fails closed when required configuration is missing or invalid.
 
 The login screen is the initial public route. Protected routes require a restored Supabase session; **Log out** clears the device session immediately and reports if remote revocation could not be completed.
 

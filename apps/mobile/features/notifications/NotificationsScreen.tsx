@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Pressable,
@@ -9,55 +9,46 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { NotificationAlert } from "../api/notificationClient";
 
-export type PriceAlert = {
-  id: string;
-  name: string;
-  retailer: string;
-  previousPrice: string;
-  currentPrice: string;
-  targetPrice: string;
-  enabled: boolean;
-};
-
-const exampleAlerts: PriceAlert[] = [
-  {
-    id: "switch-2",
-    name: "Nintendo Switch 2",
-    retailer: "Target",
-    previousPrice: "$499.99",
-    currentPrice: "$449.99",
-    targetPrice: "$450.00",
-    enabled: true,
-  },
-  {
-    id: "headphones",
-    name: "Sony WH-1000XM6",
-    retailer: "Amazon",
-    previousPrice: "$449.99",
-    currentPrice: "$398.00",
-    targetPrice: "$400.00",
-    enabled: true,
-  },
-];
+export type PriceAlert = NotificationAlert;
 
 type NotificationsScreenProps = {
-  alerts?: PriceAlert[];
+  alerts: PriceAlert[];
   onManageDeliveryPreferences: () => void;
+  onToggleAlert: (id: string, enabled: boolean) => Promise<void>;
 };
 
 export function NotificationsScreen({
-  alerts = exampleAlerts,
+  alerts,
   onManageDeliveryPreferences,
+  onToggleAlert,
 }: NotificationsScreenProps) {
   const [priceAlerts, setPriceAlerts] = useState(alerts);
+  const [toggleError, setToggleError] = useState("");
 
-  function setAlertEnabled(id: string, enabled: boolean) {
+  useEffect(() => setPriceAlerts(alerts), [alerts]);
+
+  async function setAlertEnabled(id: string, enabled: boolean) {
+    const previous = priceAlerts.find((alert) => alert.id === id)?.enabled;
+    setToggleError("");
     setPriceAlerts((currentAlerts) =>
       currentAlerts.map((alert) =>
         alert.id === id ? { ...alert, enabled } : alert,
       ),
     );
+    try {
+      await onToggleAlert(id, enabled);
+    } catch {
+      if (previous !== undefined) {
+        setPriceAlerts((currentAlerts) =>
+          currentAlerts.map((alert) =>
+            alert.id === id ? { ...alert, enabled: previous } : alert,
+          ),
+        );
+      }
+      setToggleError("Unable to update this alert. Try again.");
+    }
   }
 
   return (
@@ -108,6 +99,11 @@ export function NotificationsScreen({
               </View>
             ))
           )}
+          {toggleError ? (
+            <Text accessibilityLiveRegion="polite" style={styles.errorText}>
+              {toggleError}
+            </Text>
+          ) : null}
         </View>
 
         <Pressable
@@ -174,6 +170,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   emptyText: { color: "#aaa", fontSize: 15, lineHeight: 21 },
+  errorText: { color: "#FFB4AB", fontSize: 14, marginTop: 12 },
   preferencesLink: {
     backgroundColor: "#161616",
     borderColor: "#2b2b2b",

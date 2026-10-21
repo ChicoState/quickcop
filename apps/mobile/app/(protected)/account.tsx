@@ -1,28 +1,29 @@
-import { useState } from "react";
+import { useRouter } from "expo-router";
 
-import { AccountInfoScreen } from "../../features/account/AccountInfoScreen";
-import type { AccountInfo } from "../../features/account/types";
-
-const prototypeAccount: AccountInfo = {
-  email: "shopper@example.com",
-  notificationPreferences: {
-    priceChange: { email: false, push: false },
-    restock: { email: false, push: false },
-  },
-  pendingEmail: null,
-  phone: null,
-  pushAvailability: "unavailable",
-  username: "quickcop_user",
-  verifiedEmail: "shopper@example.com",
-};
+import { AccountInfoContainer } from "../../features/account/AccountInfoContainer";
+import { useAuth } from "../../features/auth/AuthProvider";
 
 export default function AccountRoute() {
-  const [account, setAccount] = useState(prototypeAccount);
+  const router = useRouter();
+  const { logout } = useAuth();
 
   return (
-    <AccountInfoScreen
-      account={account}
-      onSave={async (next) => setAccount(next)}
+    <AccountInfoContainer
+      onUnauthorized={() => {
+        void logout()
+          .then((result) => {
+            router.replace({
+              pathname: "/(public)",
+              params: result.ok ? undefined : { logout: "failed" },
+            });
+          })
+          .catch(() => {
+            router.replace({
+              pathname: "/(public)",
+              params: { logout: "failed" },
+            });
+          });
+      }}
     />
   );
 }

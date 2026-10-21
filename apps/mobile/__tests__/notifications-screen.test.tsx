@@ -6,10 +6,28 @@ import {
   type PriceAlert,
 } from "../features/notifications/NotificationsScreen";
 
+const alerts: PriceAlert[] = [
+  {
+    id: "switch-2",
+    kind: "price_change",
+    name: "Nintendo Switch 2",
+    retailer: "Target",
+    previousPrice: "$499.99",
+    currentPrice: "$449.99",
+    targetPrice: "$450.00",
+    enabled: true,
+    createdAt: "2026-10-19T00:00:00.000Z",
+  },
+];
+
 describe("NotificationsScreen", () => {
-  it("shows example price-drop alerts and lets the user toggle an alert locally", async () => {
+  it("shows a server price-drop alert and lets the user toggle it", async () => {
     const screen = await render(
-      <NotificationsScreen onManageDeliveryPreferences={jest.fn()} />,
+      <NotificationsScreen
+        alerts={alerts}
+        onManageDeliveryPreferences={jest.fn()}
+        onToggleAlert={jest.fn().mockResolvedValue(undefined)}
+      />,
     );
 
     expect(screen.getByText("Nintendo Switch 2")).toBeTruthy();
@@ -31,11 +49,11 @@ describe("NotificationsScreen", () => {
   });
 
   it("shows an empty state when no price alerts are available", async () => {
-    const alerts: PriceAlert[] = [];
     const screen = await render(
       <NotificationsScreen
-        alerts={alerts}
+        alerts={[]}
         onManageDeliveryPreferences={jest.fn()}
+        onToggleAlert={jest.fn().mockResolvedValue(undefined)}
       />,
     );
 
@@ -51,7 +69,9 @@ describe("NotificationsScreen", () => {
     const onManageDeliveryPreferences = jest.fn();
     const screen = await render(
       <NotificationsScreen
+        alerts={alerts}
         onManageDeliveryPreferences={onManageDeliveryPreferences}
+        onToggleAlert={jest.fn().mockResolvedValue(undefined)}
       />,
     );
 

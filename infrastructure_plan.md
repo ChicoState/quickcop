@@ -1,6 +1,63 @@
 # Infrastructure Plan
 
-> Planning only. This document describes future infrastructure work. No installations, configuration changes, containers, workflows, deployments, or other implementation files were created by the infrastructure-planning process.
+> This is the infrastructure source of truth. The repository now contains initial mobile and API implementation slices in addition to the infrastructure harness; the phase plan below distinguishes existing work from required completion work.
+
+## Current baseline and plan corrections
+
+The repository is no longer infrastructure-only: `apps/mobile` has its own Expo package, lockfile, Jest configuration, and typecheck script; `apps/api` has its own NestJS package, lockfile, account module, Supabase service, JWT guard, migrations, and API tests. The root package remains an infrastructure and shared-quality harness. Root commands do not install, test, or typecheck either application package.
+
+The planned completion sequence is therefore:
+
+### Phase 0: Restore both package environments
+
+1. Verify each package's lockfile independently. The required clean-install and verification scope is:
+
+   ```bash
+   npm ci
+   npm test -- --runInBand
+   npm run typecheck
+
+   cd apps/mobile
+   npm ci
+   npm test -- --runInBand
+   npm run typecheck
+   ```
+
+   The acceptance criterion is: **each package's clean `npm ci` succeeds**. Root `npm ci` does not restore mobile or API dependencies.
+
+2. Resolve the local database strategy before relying on smoke checks. The selected strategy is to retain the existing Compose PostgreSQL smoke test for the root infrastructure gate and use the Supabase CLI/local stack for application development, migrations, and Supabase-backed mobile/API flows. Document the boundary explicitly: `npm run test:smoke` proves only Compose PostgreSQL readiness, while Supabase-backed checks must start and validate the local Supabase services. If this choice changes, update this plan and migrate the script and documentation together.
+
+### Phase 1: Establish infrastructure and authentication
+
+3. Establish the NestJS API boundary, Supabase project configuration, JWT validation, server-only credentials, migration workflow, and local test environment. This task includes creating/maintaining `apps/api`, linking local and hosted Supabase environments, loading server credentials only on the API, configuring the mobile API base URL, and documenting local versus hosted behavior. Bootstrap, migration, and request-boundary code must define `try/catch/finally` cleanup/error behavior and tests for failed configuration, failed migrations, and abandoned requests.
+
+4. Add safe mobile configuration. The parser must require a public Supabase URL and publishable/anonymous key, reject missing or blank values with a clear diagnostic, reject known secret variable names, reject service-role keys by inspecting JWT role/claims where applicable, and ensure no server credentials are present in `EXPO_PUBLIC_*` variables or the mobile bundle. Configuration initialization and auth/session consumers must use `try/catch/finally` so rejected setup cannot leave loading or cleanup state unresolved.
+
+5. Replace username lookup and enumeration-prone RPCs. No client-callable RPC may answer username lookup or availability questions. Enforce uniqueness server-side, return generic conflict responses, and handle signup/account creation through the approved API or a carefully designed Supabase flow. Login and signup tests must not reveal whether a username exists.
+
+6. Implement complete protected-route and session handling. Protect `/home`, `/account`, and `/notifications` using route-group or equivalent segment-based logic. Add a route matrix covering unauthenticated and authenticated access to every protected route, authenticated navigation to login/signup, rejected session restoration, and logout while a protected screen is mounted.
+
+### Phase 2: Account contract and persistence
+
+7. Use the canonical account contract `GET /api/account` and atomic `PATCH /api/account` across the API, mobile client, and tests. All account reads/writes go through NestJS; the public mobile key must never access private Supabase tables directly. Account load/save implementations must define `try/catch/finally` behavior for success, validation failure, timeout/cancellation, and cleanup, with tests proving no stale loading/submitting state remains.
+
+8. Add Supabase migrations, RLS, validation, and ownership tests. The API may use server credentials, but defense in depth requires per-user RLS policies. Define whether each operation relies on API authorization, RLS, or both; this plan requires both for private account data. Include account deletion/export and pending-email cancellation behavior.
+
+9. Connect the account screen to the typed API contract. Preserve pending-email semantics, validation, generic conflicts, push availability, and safe error states.
+
+### Phase 3: Notifications and logout
+
+10. Replace notification fixtures with bounded server data. Add pagination or another explicit bounded-result requirement before notification history is implemented.
+
+11. Harden request cancellation, logout, and error handling. Login, session restoration, account loading, account save, notifications, and logout require timeout/cancellation tests. Use `try/catch/finally` in the relevant flows and never log Supabase error objects or raw backend errors.
+
+### Phase 4: Verification
+
+12. Add security tests for authentication, ownership, username enumeration, secrets/configuration, RLS, PII handling, generic conflicts, deletion/export, and email-change cancellation.
+
+13. Add a local Supabase-backed Maestro flow. Confirmation must use either the local Supabase mail-testing service or a test-only provider fixture that cannot run in production; tests must prove the same confirmation behavior users receive and may not “simulate confirmation” ambiguously.
+
+14. Run root, mobile, API, audit, smoke, and static-analysis gates. At minimum, run the root and mobile commands in Phase 0, `cd apps/api && npm ci && npm test -- --runInBand && npm run typecheck` for the API package, plus root `npm run verify`, `npm run audit`, and `npm run test:smoke`. The root Compose smoke test and Supabase-local application checks must be reported separately so a passing Compose check cannot be mistaken for validation of the planned Supabase environment.
 
 ## 1. Project and User Experience
 
@@ -170,15 +227,14 @@ These are developer-workstation prerequisites that will not be supplied by the p
 | `production`                                         | Protected GitHub environment | Require approval and scope production secrets                     |
 | Google Play Console account                          | Account                      | Own Android distribution and release controls                     |
 
-## 11. Planned Repository Artifacts - Not Created by This Skill
+## 11. Planned Repository Artifacts - Current Status
 
-- [ ] Application manifests and npm lockfile.
-- [ ] Expo/React Native mobile application and NestJS backend project files.
-- [ ] Test, coverage, Maestro, StrykerJS, Prettier, ESLint, TypeScript, Semgrep, and Gitleaks configuration.
-- [ ] API Dockerfile, Compose configuration, `.dockerignore`, and environment templates.
-- [ ] `.github/workflows/pr-checks.yml`.
-- [ ] `.github/workflows/release.yml`.
-- [ ] Deployment, database migration, Google Play, and signing configuration.
+- [x] Root, mobile, and API application manifests and lockfiles exist; their independent verification remains a Phase 0 requirement.
+- [x] Initial Expo/React Native mobile and NestJS/Supabase account slices exist; full product behavior remains incomplete.
+- [x] Root TypeScript, Jest, StrykerJS, Prettier, and ESLint configuration exists; mobile/API gates and security-analysis coverage remain to be completed.
+- [x] Compose PostgreSQL smoke configuration and an initial API Dockerfile exist; Supabase local configuration and final application-owned image wiring remain planned.
+- [x] Initial pull-request workflow exists; it must be expanded to verify root, mobile, API, Supabase-local, and security gates.
+- [x] Release workflow scaffolding exists; deployment, database migration, Google Play, and signing configuration remain protected future work.
 
 ## 12. Assumptions and Open Items
 

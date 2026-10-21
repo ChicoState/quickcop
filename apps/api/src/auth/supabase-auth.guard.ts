@@ -3,9 +3,9 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
-} from "@nestjs/common";
-import { Request } from "express";
-import { SupabaseService } from "../supabase/supabase.service";
+} from '@nestjs/common';
+import { Request } from 'express';
+import { SupabaseService } from '../supabase/supabase.service';
 
 export type AuthedRequest = Request & { user: { id: string } };
 
@@ -15,13 +15,27 @@ export class SupabaseAuthGuard implements CanActivate {
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
-    const [scheme, token] = (req.headers.authorization ?? "").split(" ");
-    if (scheme !== "Bearer" || !token) throw new UnauthorizedException();
+    const authorization = req.headers.authorization;
+    const parts =
+      typeof authorization === 'string'
+        ? authorization.trim().split(/\s+/)
+        : [];
+    if (
+      parts.length !== 2 ||
+      parts[0].toLowerCase() !== 'bearer' ||
+      !parts[1]
+    ) {
+      throw new UnauthorizedException();
+    }
 
-    const { data, error } = await this.supabase.admin.auth.getUser(token);
-    if (error || !data.user) throw new UnauthorizedException();
+    try {
+      const { data, error } = await this.supabase.admin.auth.getUser(parts[1]);
+      if (error || !data.user) throw new UnauthorizedException();
 
-    req.user = { id: data.user.id };
-    return true;
+      req.user = { id: data.user.id };
+      return true;
+    } catch {
+      throw new UnauthorizedException();
+    }
   }
 }

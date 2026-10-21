@@ -1,7 +1,17 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+import { AccountSaveError } from "../features/api/accountClient";
 import { AccountInfoScreen } from "../features/account/AccountInfoScreen";
 import type { AccountInfo } from "../features/account/types";
+
+jest.mock("../features/api/accountClient", () => {
+  class AccountSaveError extends Error {}
+  return {
+    AccountSaveError,
+    loadAccount: jest.fn(),
+    saveAccount: jest.fn(),
+  };
+});
 
 const account: AccountInfo = {
   email: "shopper@example.com",
@@ -60,7 +70,7 @@ describe("AccountInfoScreen", () => {
       });
     });
 
-    expect(screen.getByText("Changes saved for this session.")).toBeTruthy();
+    expect(await screen.findByText("Changes saved.")).toBeTruthy();
   });
 
   it("requires a username and a valid email before saving", async () => {
@@ -74,5 +84,35 @@ describe("AccountInfoScreen", () => {
 
     expect(screen.getByText("Enter a username.")).toBeTruthy();
     expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
+  });
+
+  it("renders safe defaults when the server omits a preference group", async () => {
+    const incompleteAccount = {
+      ...account,
+      notificationPreferences: { priceChange: { email: true, push: true } },
+    } as AccountInfo;
+    const screen = await render(
+      <AccountInfoScreen account={incompleteAccount} onSave={jest.fn()} />,
+    );
+
+    expect(screen.getByLabelText("Restock push alerts").props.value).toBe(
+      false,
+    );
+    expect(screen.getByLabelText("Price-change push alerts").props.value).toBe(
+      true,
+    );
+  });
+
+  it("shows the message from a failed save", async () => {
+    const onSave = jest
+      .fn<Promise<void>, [AccountInfo]>()
+      .mockRejectedValue(new AccountSaveError("That username is taken."));
+    const screen = await render(
+      <AccountInfoScreen account={account} onSave={onSave} />,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByText("That username is taken.")).toBeTruthy();
   });
 });

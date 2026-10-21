@@ -52,4 +52,22 @@ describe("authService", () => {
     expect(mockAuth.signOut).toHaveBeenNthCalledWith(1, { scope: "global" });
     expect(mockAuth.signOut).toHaveBeenNthCalledWith(2, { scope: "local" });
   });
+
+  it("reports remote logout failure without leaving local auth uncleared", async () => {
+    mockAuth.signOut
+      .mockResolvedValueOnce({ error: new Error("remote failure") })
+      .mockResolvedValueOnce({ error: null });
+
+    await expect(signOut()).resolves.toEqual({ ok: false });
+    expect(mockAuth.signOut).toHaveBeenNthCalledWith(2, { scope: "local" });
+  });
+
+  it("still attempts remote revocation when local logout fails", async () => {
+    mockAuth.signOut
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: new Error("local failure") });
+
+    await expect(signOut()).resolves.toEqual({ ok: false });
+    expect(mockAuth.signOut).toHaveBeenNthCalledWith(1, { scope: "global" });
+  });
 });

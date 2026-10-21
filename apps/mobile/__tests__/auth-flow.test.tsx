@@ -31,15 +31,20 @@ beforeEach(() => {
 });
 
 describe("login", () => {
-  async function submitLogin(onLogin = jest.fn()) {
-    const user = userEvent.setup();
+  async function submitLogin(
+    onLogin = jest.fn(),
+    email = "person@example.com",
+  ) {
     const screen = await render(
       <LoginScreen onLogin={onLogin} onCreateAccount={jest.fn()} />,
     );
 
-    await user.type(screen.getByLabelText("Email"), "person@example.com");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.press(screen.getByRole("button", { name: "Log in" }));
+    await fireEvent.changeText(screen.getByLabelText("Email"), email);
+    await fireEvent.changeText(
+      screen.getByLabelText("Password"),
+      "password123",
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Log in" }));
 
     return { screen, onLogin };
   }
@@ -67,6 +72,23 @@ describe("login", () => {
       expect(screen.getByText("Invalid email or password.")).toBeTruthy(),
     );
     expect(onLogin).not.toHaveBeenCalled();
+  });
+
+  it("uses the same login message for unknown emails and wrong passwords", async () => {
+    mockAuthService.signInWithEmail.mockResolvedValue({
+      ok: false,
+      failure: { kind: "credentials" },
+    });
+
+    const first = await submitLogin(jest.fn(), "unknown@example.com");
+    expect(
+      await first.screen.findByText("Invalid email or password."),
+    ).toBeTruthy();
+
+    const second = await submitLogin(jest.fn(), "person@example.com");
+    expect(
+      await second.screen.findByText("Invalid email or password."),
+    ).toBeTruthy();
   });
 
   it("shows a retryable message when the network request fails", async () => {

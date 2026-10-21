@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
 
-import { NotificationsScreen } from "../../features/notifications/NotificationsScreen";
+import { NotificationsContainer } from "../../features/notifications/NotificationsContainer";
 
 export default function NotificationsRoute() {
   const router = useRouter();
 
   return (
-    <NotificationsScreen
+    <NotificationsContainer
       onManageDeliveryPreferences={() => router.push("/(protected)/account")}
     />
   );

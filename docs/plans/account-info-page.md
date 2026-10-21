@@ -33,7 +33,7 @@ The delivery preferences must never pause, remove, or otherwise change monitorin
 ## Existing Constraints
 
 - The mobile application is Expo/React Native in `apps/mobile` and currently has local-only auth prototype screens.
-- `apps/api` does not yet exist. Durable profile data, authorization, event processing, and notification delivery require the future NestJS API and worker specified in `infrastructure_plan.md`.
+- `apps/api` now exists as an initial NestJS/Supabase slice, but its current split account routes and partial persistence implementation do not yet satisfy this contract. Durable profile data, authorization, event processing, and notification delivery remain application-owned API/worker work.
 - PostgreSQL is the planned system of record. Cloud Run API and worker services remain separate, always-on services; this plan does not change that infrastructure decision.
 
 ## User Flow
@@ -70,6 +70,7 @@ interface UpdateAccountInfoInput {
 
 - `GET /api/account` returns only the signed-in account's `AccountInfo`.
 - `PATCH /api/account` atomically validates and updates the supplied non-email fields and preferences; when email changes, it records the replacement as pending verification while retaining the prior verified delivery address, then returns canonical account state.
+- The request and response types are shared or generated from one typed contract used by the NestJS API, mobile client, and tests. The existing `/account/profile` and `/account/notification-preferences` routes are transitional and must not remain as parallel public contracts.
 - An unauthenticated request returns `401`; a request cannot name or modify another account. Invalid input returns the project's consistent `422` validation error shape.
 - Email-address changes must use the identity provider's verified-email flow before becoming the active delivery address. The prior verified email remains active until verification completes; the exact managed-provider integration is deferred until the provider is selected.
 - A push preference represents delivery intent, not proof that a current device can receive push. The response must expose non-sensitive push availability so the client can present a remediation state.
@@ -134,7 +135,7 @@ When `apps/api` exists, add focused API and worker integration commands to its d
 
 ### Task 2: Implement authenticated profile read/update behavior
 
-**Description:** Add `GET /api/account` and atomic `PATCH /api/account`, using the authenticated identity as the only account selector.
+**Description:** Replace the current split account endpoints with `GET /api/account` and atomic `PATCH /api/account`, using the authenticated identity as the only account selector. All reads and writes go through NestJS; the mobile public Supabase key must never query private account tables directly.
 
 **Acceptance criteria:**
 
@@ -147,6 +148,7 @@ When `apps/api` exists, add focused API and worker integration commands to its d
 
 - [ ] API integration tests cover success, invalid input, unauthenticated access, cross-account access, and atomic update failure.
 - [ ] Security review confirms boundary validation and no PII logging.
+- [ ] Account deletion/export and cancellation of a pending email change have defined API behavior and tests.
 
 **Dependencies:** Task 1; real authentication/session ownership in the API.
 
@@ -190,6 +192,7 @@ When `apps/api` exists, add focused API and worker integration commands to its d
 
 - [ ] React Native Testing Library tests cover rendering, required-field validation, each toggle, retry, successful save, pending email verification, and push-unavailable remediation.
 - [ ] Screen-reader labels/state and touch targets are manually checked on an Android emulator.
+- [ ] Route protection covers `/home`, `/account`, and `/notifications`; route-matrix tests cover unauthenticated access, authenticated access, authenticated navigation to login/signup, rejected session restoration, and logout while a protected screen is mounted.
 
 **Dependencies:** Task 2 contract (or a deliberately isolated typed repository mock for an earlier UI-only slice).
 
@@ -209,6 +212,8 @@ When `apps/api` exists, add focused API and worker integration commands to its d
 
 - [ ] Focused mobile tests plus API/worker integration suites pass.
 - [ ] `npm run verify`, `npm run audit`, `npm run test:smoke`, `git diff --check`, and the mobile test/typecheck commands pass under Node 22.14.0.
+- [ ] Timeout/cancellation tests cover login, session restoration, account loading, account save, notifications, and logout; request cleanup uses `try/catch/finally` where required.
+- [ ] Supabase error objects and raw backend errors are never logged or returned to clients.
 
 **Dependencies:** Tasks 2 and 4.
 
@@ -246,3 +251,11 @@ Tasks 3 and 4 may proceed in parallel after the contract and Task 2's ownership/
 
 - The managed identity provider has not yet been selected, so the precise email-change re-verification flow is deferred.
 - Push-token registration implementation, email provider selection, and notification deduplication retention windows belong to their respective future delivery specifications.
+
+## Cross-cutting requirements carried into every implementation task
+
+- Username availability and lookup must not be client-callable. Do not restore `get_email_for_username`, `username_available`, or an equivalent RPC. Username uniqueness is enforced server-side with a generic conflict response, and tests cover enumeration attempts through both login and signup.
+- Mobile configuration is validated by a testable parser. It requires non-blank public URL and publishable/anonymous key values, rejects known secret variable names, rejects service-role JWT claims where applicable, and never places server credentials in `EXPO_PUBLIC_*` variables or the bundle.
+- Every private account table has RLS policies keyed to the authenticated user, even when the API uses server-only credentials. Ownership tests cover both API authorization and database policy behavior.
+- Notification history has pagination or another explicit bounded-result limit before Task 10/notification implementation begins.
+- E2E account confirmation uses the local Supabase mail-testing service or a production-incompatible test-only provider fixture. “Confirm or simulate confirmation” is not an acceptable test definition.
