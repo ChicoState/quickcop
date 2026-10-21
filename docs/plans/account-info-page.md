@@ -33,7 +33,7 @@ The delivery preferences must never pause, remove, or otherwise change monitorin
 ## Existing Constraints
 
 - The mobile application is Expo/React Native in `apps/mobile` and currently has local-only auth prototype screens.
-- `apps/api` now exists as an initial NestJS/Supabase slice, but its current split account routes and partial persistence implementation do not yet satisfy this contract. Durable profile data, authorization, event processing, and notification delivery remain application-owned API/worker work.
+- `apps/api` now exists as an initial NestJS/Supabase slice. The account page currently uses three application boundaries: `GET /account`, `PATCH /account/profile`, and `PATCH /account/notification-preferences`. Durable profile data, authorization, event processing, and notification delivery remain application-owned API/worker work.
 - PostgreSQL is the planned system of record. Cloud Run API and worker services remain separate, always-on services; this plan does not change that infrastructure decision.
 
 ## User Flow
@@ -45,9 +45,9 @@ The delivery preferences must never pause, remove, or otherwise change monitorin
 5. Future stock-monitoring code records a restock or price decrease event independently of these preferences. Delivery code sends only through the currently enabled, available matching channel(s). With all four toggles off, the event is still recorded and monitoring continues, but no push or email is sent.
 6. When push is enabled but unavailable, the app retains the choice and explains how to enable Android notifications; it must not silently switch the preference off.
 
-## Proposed Contract
+## Current Account Contract
 
-Define the shared API contract before implementing either client or server. Do not expose password hashes, sessions, verification tokens, provider identifiers, or other internal security fields.
+The current request and response contract must not expose password hashes, sessions, verification tokens, provider identifiers, or other internal security fields.
 
 ```ts
 type AlertKind = "RESTOCK" | "PRICE_CHANGE";
@@ -68,11 +68,13 @@ interface UpdateAccountInfoInput {
 }
 ```
 
-- `GET /api/account` returns only the signed-in account's `AccountInfo`.
-- `PATCH /api/account` atomically validates and updates the supplied non-email fields and preferences; when email changes, it records the replacement as pending verification while retaining the prior verified delivery address, then returns canonical account state.
-- The request and response types are shared or generated from one typed contract used by the NestJS API, mobile client, and tests. The existing `/account/profile` and `/account/notification-preferences` routes are transitional and must not remain as parallel public contracts.
+- `GET /account` returns only the signed-in account's profile and notification preferences.
+- `PATCH /account/profile` validates and updates the signed-in account's username, display name, and phone fields.
+- `PATCH /account/notification-preferences` validates and updates the signed-in account's supported notification preference fields.
+- Email updates go directly through Supabase Auth, so a profile change and an email change are not atomic.
+- The request and response types are shared or generated from one typed contract used by the NestJS API, mobile client, and tests.
 - An unauthenticated request returns `401`; a request cannot name or modify another account. Invalid input returns the project's consistent `422` validation error shape.
-- Email-address changes must use the identity provider's verified-email flow before becoming the active delivery address. The prior verified email remains active until verification completes; the exact managed-provider integration is deferred until the provider is selected.
+- Email-address changes use Supabase Auth's verified-email flow before becoming the active delivery address. The prior verified email remains active until verification completes.
 - A push preference represents delivery intent, not proof that a current device can receive push. The response must expose non-sensitive push availability so the client can present a remediation state.
 
 ## Data and Worker Invariant
@@ -135,7 +137,7 @@ When `apps/api` exists, add focused API and worker integration commands to its d
 
 ### Task 2: Implement authenticated profile read/update behavior
 
-**Description:** Replace the current split account endpoints with `GET /api/account` and atomic `PATCH /api/account`, using the authenticated identity as the only account selector. All reads and writes go through NestJS; the mobile public Supabase key must never query private account tables directly.
+**Description:** Implement authenticated profile and preference behavior through the current split account endpoints, using the authenticated identity as the only account selector. Profile and preference reads and writes go through NestJS; email updates use the Supabase Auth flow directly from the mobile client.
 
 **Acceptance criteria:**
 
@@ -146,7 +148,7 @@ When `apps/api` exists, add focused API and worker integration commands to its d
 
 **Verification:**
 
-- [ ] API integration tests cover success, invalid input, unauthenticated access, cross-account access, and atomic update failure.
+- [ ] API integration tests cover success, invalid input, unauthenticated access, and cross-account access for each endpoint; mobile tests cover the non-atomic profile/email update behavior.
 - [ ] Security review confirms boundary validation and no PII logging.
 - [ ] Account deletion/export and cancellation of a pending email change have defined API behavior and tests.
 
