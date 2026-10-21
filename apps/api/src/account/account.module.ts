@@ -1,7 +1,7 @@
-import { Module } from "@nestjs/common";
-import { SupabaseAuthGuard } from "../auth/supabase-auth.guard";
-import { AccountController } from "./account.controller";
-import { AccountService } from "./account.service";
+import { Module } from '@nestjs/common';
+import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { AccountController } from './account.controller';
+import { AccountService } from './account.service';
 
 @Module({
   controllers: [AccountController],

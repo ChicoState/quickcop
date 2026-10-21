@@ -1,9 +1,4 @@
-import {
-  fireEvent,
-  render,
-  userEvent,
-  waitFor,
-} from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 import { CreateAccountScreen } from "../features/auth/CreateAccountScreen";
