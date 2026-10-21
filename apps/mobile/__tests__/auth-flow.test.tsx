@@ -150,6 +150,27 @@ describe("create account", () => {
     });
   });
 
+  it("does not log the Supabase signup response", async () => {
+    const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+    mockSupabase.auth.signUp.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "access-token",
+          refresh_token: "refresh-token",
+        },
+      },
+      error: null,
+    });
+
+    try {
+      await submitSignUp();
+
+      await waitFor(() => expect(consoleLog).not.toHaveBeenCalled());
+    } finally {
+      consoleLog.mockRestore();
+    }
+  });
+
   it("rejects a taken username without creating an account", async () => {
     mockSupabase.rpc.mockResolvedValue({ data: false, error: null });
 

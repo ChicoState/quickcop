@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import {
   Pressable,
   SafeAreaView,
@@ -9,23 +7,27 @@ import {
   View,
 } from "react-native";
 
+import {
+  AuthenticatedHeader,
+  type AuthenticatedNavigation,
+} from "../navigation/AuthenticatedHeader";
 import { supabase } from "../../lib/supabase";
 
 type HomeScreenProps = {
+  navigation?: AuthenticatedNavigation;
   onLogout: () => void;
   onOpenNotifications: () => void;
   onOpenWatchedItems?: () => void;
+  onOpenPopularProducts?: () => void;
 };
 
 export function HomeScreen({
+  navigation,
   onLogout,
   onOpenNotifications,
   onOpenWatchedItems = () => undefined,
+  onOpenPopularProducts = () => undefined,
 }: HomeScreenProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [storesOpen, setStoresOpen] = useState(false);
-
   async function handleLogout() {
     await supabase.auth.signOut();
     onLogout();
@@ -34,89 +36,17 @@ export function HomeScreen({
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            accessibilityLabel="Open menu"
-            accessibilityRole="button"
-            style={styles.iconButton}
-            onPress={() => setMenuOpen(!menuOpen)}
-          >
-            <Text style={styles.iconText}>☰</Text>
-          </Pressable>
-
-          <Text style={styles.logo}>QuickCop</Text>
-
-          <Pressable style={styles.iconButton}>
-            <Text style={styles.iconText}>⌕</Text>
-          </Pressable>
-        </View>
-
-        {/* Hamburger Menu */}
-        {menuOpen && (
-          <View style={styles.menu}>
-            <Pressable>
-              <Text style={styles.menuItem}>Home</Text>
-            </Pressable>
-
-            <Pressable accessibilityRole="button" onPress={onOpenWatchedItems}>
-              <Text style={styles.menuItem}>Watched Items</Text>
-            </Pressable>
-
-            <Pressable accessibilityRole="button" onPress={onOpenNotifications}>
-              <Text style={styles.menuItem}>Price alerts</Text>
-            </Pressable>
-
-            <Pressable>
-              <Text style={styles.menuItem}>Recommended</Text>
-            </Pressable>
-
-            <Pressable>
-              <Text style={styles.menuItem}>Popular</Text>
-            </Pressable>
-
-            {/* Categories */}
-            <Pressable onPress={() => setCategoriesOpen(!categoriesOpen)}>
-              <Text style={styles.menuItem}>
-                Categories {categoriesOpen ? "▲" : "▼"}
-              </Text>
-            </Pressable>
-
-            {categoriesOpen && (
-              <View style={styles.subMenu}>
-                <Text style={styles.subMenuItem}>Tickets</Text>
-                <Text style={styles.subMenuItem}>Cards</Text>
-                <Text style={styles.subMenuItem}>Lego</Text>
-                <Text style={styles.subMenuItem}>See All</Text>
-              </View>
-            )}
-
-            {/* Stores */}
-            <Pressable onPress={() => setStoresOpen(!storesOpen)}>
-              <Text style={styles.menuItem}>
-                Stores {storesOpen ? "▲" : "▼"}
-              </Text>
-            </Pressable>
-
-            {storesOpen && (
-              <View style={styles.subMenu}>
-                <Text style={styles.subMenuItem}>Amazon</Text>
-                <Text style={styles.subMenuItem}>Target</Text>
-                <Text style={styles.subMenuItem}>Walmart</Text>
-                <Text style={styles.subMenuItem}>See All</Text>
-              </View>
-            )}
-
-            {/* Settings */}
-            <Pressable>
-              <Text style={styles.menuItem}>Settings</Text>
-            </Pressable>
-
-            <Pressable accessibilityRole="button" onPress={handleLogout}>
-              <Text style={styles.logoutMenuItem}>Log out</Text>
-            </Pressable>
-          </View>
-        )}
+        <AuthenticatedHeader
+          navigation={navigation}
+          onLogout={handleLogout}
+          onNavigate={(route) => {
+            if (route === "/watched-items") onOpenWatchedItems();
+            else if (route === "/home/popular-products")
+              onOpenPopularProducts();
+            else if (route === "/notifications") onOpenNotifications();
+            else navigation?.replace(route);
+          }}
+        />
 
         {/* Home */}
         <Text style={styles.title}>Home</Text>
@@ -151,7 +81,16 @@ export function HomeScreen({
 
         {/* Popular */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Popular</Text>
+            <Pressable
+              accessibilityLabel="View popular products"
+              accessibilityRole="button"
+              onPress={onOpenPopularProducts}
+            >
+              <Text style={styles.sectionAction}>See all</Text>
+            </Pressable>
+          </View>
 
           <View style={styles.productRow}>
             <ProductCard name="Product Name" store="Walmart" price="$19.99" />
@@ -194,64 +133,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-
-  logo: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-
-  iconButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  iconText: {
-    color: "#fff",
-    fontSize: 26,
-  },
-
-  menu: {
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#333",
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 25,
-  },
-
-  menuItem: {
-    color: "#fff",
-    fontSize: 18,
-    paddingVertical: 10,
-  },
-
-  subMenu: {
-    marginLeft: 20,
-    marginBottom: 6,
-  },
-
-  subMenuItem: {
-    color: "#aaa",
-    fontSize: 16,
-    paddingVertical: 7,
-  },
-
-  logoutMenuItem: {
-    color: "#ff7777",
-    fontSize: 18,
-    paddingVertical: 10,
-    marginTop: 8,
-  },
-
   title: {
     color: "#fff",
     fontSize: 30,
@@ -267,7 +148,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 21,
     fontWeight: "600",
+  },
+
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 14,
+  },
+
+  sectionAction: {
+    color: "#79DCA0",
+    fontSize: 14,
+    fontWeight: "600",
   },
 
   emptyCard: {

@@ -3,6 +3,11 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  AuthenticatedHeader,
+  type AuthenticatedNavigation,
+} from "../navigation/AuthenticatedHeader";
+
 export type PriceAlert = {
   id: string;
   name: string;
@@ -36,10 +41,14 @@ const exampleAlerts: PriceAlert[] = [
 
 type NotificationsScreenProps = {
   alerts?: PriceAlert[];
+  navigation?: AuthenticatedNavigation;
+  onLogout?: () => void | Promise<void>;
 };
 
 export function NotificationsScreen({
   alerts = exampleAlerts,
+  navigation,
+  onLogout,
 }: NotificationsScreenProps) {
   const [priceAlerts, setPriceAlerts] = useState(alerts);
   const [priceDropNotificationsEnabled, setPriceDropNotificationsEnabled] =
@@ -58,6 +67,7 @@ export function NotificationsScreen({
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
+        <AuthenticatedHeader navigation={navigation} onLogout={onLogout} />
         <Text accessibilityRole="header" style={styles.title}>
           Price alerts
         </Text>

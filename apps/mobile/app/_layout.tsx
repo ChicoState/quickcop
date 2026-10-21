@@ -12,11 +12,12 @@ function RootNavigator() {
   useEffect(() => {
     if (loading) return;
 
-    const onHome = segments[0] === "home";
+    const onPublicRoute =
+      segments[0] === undefined || segments[0] === "create-account";
 
-    if (session && !onHome) {
+    if (session && onPublicRoute) {
       router.replace("/home");
-    } else if (!session && onHome) {
+    } else if (!session && !onPublicRoute) {
       router.replace("/");
     }
   }, [session, loading, segments]);

@@ -89,7 +89,6 @@ export function CreateAccountScreen({
         },
       },
     });
-    console.log("signUp result:", { data, error: signUpError });
     setLoading(false);
 
     if (signUpError) {
