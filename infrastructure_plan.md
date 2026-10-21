@@ -39,7 +39,7 @@ The planned completion sequence is therefore:
 
 ### Phase 2: Account contract and persistence
 
-7. Use the canonical account contract `GET /api/account` and atomic `PATCH /api/account` across the API, mobile client, and tests. All account reads/writes go through NestJS; the public mobile key must never access private Supabase tables directly. Account load/save implementations must define `try/catch/finally` behavior for success, validation failure, timeout/cancellation, and cleanup, with tests proving no stale loading/submitting state remains.
+7. Use the current three-endpoint account contract across the API, mobile client, and tests: `GET /account`, `PATCH /account/profile`, and `PATCH /account/notification-preferences`. Profile and notification-preference reads/writes go through NestJS; email updates go directly through Supabase Auth, so profile and email changes are not atomic. The public mobile key must never access private Supabase tables directly. Account load/save implementations must define `try/catch/finally` behavior for success, validation failure, timeout/cancellation, and cleanup, with tests proving no stale loading/submitting state remains.
 
 8. Add Supabase migrations, RLS, validation, and ownership tests. The API may use server credentials, but defense in depth requires per-user RLS policies. Define whether each operation relies on API authorization, RLS, or both; this plan requires both for private account data. Include account deletion/export and pending-email cancellation behavior.
 
