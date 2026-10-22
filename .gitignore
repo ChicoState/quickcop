@@ -14,3 +14,8 @@ reports/
 android/.gradle/
 postgres-data/
 *.log
+
+.idea/
+.env
+.env.*
+!.env.example

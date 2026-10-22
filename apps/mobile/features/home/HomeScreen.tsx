@@ -1,11 +1,5 @@
-import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   AuthenticatedHeader,
@@ -15,7 +9,8 @@ import { ProductCard } from "../products/ProductCard";
 
 type HomeScreenProps = {
   navigation?: AuthenticatedNavigation;
-  onLogout: () => void;
+  onAccountInfo?: () => void;
+  onLogout: () => void | Promise<void>;
   onOpenNotifications: () => void;
   onOpenWatchedItems?: () => void;
   onOpenPopularProducts?: () => void;
@@ -23,6 +18,7 @@ type HomeScreenProps = {
 
 export function HomeScreen({
   navigation,
+  onAccountInfo,
   onLogout,
   onOpenNotifications,
   onOpenWatchedItems = () => undefined,
@@ -39,6 +35,7 @@ export function HomeScreen({
             else if (route === "/home/popular-products")
               onOpenPopularProducts();
             else if (route === "/notifications") onOpenNotifications();
+            else if (route === "/account" && onAccountInfo) onAccountInfo();
             else navigation?.replace(route);
           }}
         />

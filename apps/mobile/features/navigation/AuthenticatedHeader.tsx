@@ -18,6 +18,7 @@ const menuItems = [
   { label: "Recommended", route: "/recommended" },
   { label: "Popular", route: "/home/popular-products" },
   { label: "Notifications", route: "/notifications" },
+  { label: "Account", route: "/account" },
 ];
 
 const comingSoonItems = ["Categories", "Stores", "Settings"];
