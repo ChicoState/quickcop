@@ -1,23 +1,17 @@
 import { useState } from "react";
 
-import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-
-import { supabase } from "../../lib/supabase";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type HomeScreenProps = {
-  onLogout: () => void;
+  onAccountInfo?: () => void;
+  onLogout: () => void | Promise<void>;
   onOpenNotifications: () => void;
   onOpenWatchedItems?: () => void;
 };
 
 export function HomeScreen({
+  onAccountInfo,
   onLogout,
   onOpenNotifications,
   onOpenWatchedItems = () => undefined,
@@ -27,8 +21,7 @@ export function HomeScreen({
   const [storesOpen, setStoresOpen] = useState(false);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    onLogout();
+    await onLogout();
   }
 
   return (
@@ -66,6 +59,12 @@ export function HomeScreen({
             <Pressable accessibilityRole="button" onPress={onOpenNotifications}>
               <Text style={styles.menuItem}>Price alerts</Text>
             </Pressable>
+
+            {onAccountInfo ? (
+              <Pressable accessibilityRole="button" onPress={onAccountInfo}>
+                <Text style={styles.menuItem}>Account info</Text>
+              </Pressable>
+            ) : null}
 
             <Pressable>
               <Text style={styles.menuItem}>Recommended</Text>
