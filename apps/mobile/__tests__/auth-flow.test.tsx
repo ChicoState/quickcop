@@ -203,7 +203,7 @@ describe("create account", () => {
 });
 
 describe("logout", () => {
-  it("signs out and returns to login from the home menu", async () => {
+  it("delegates logout from the home menu to the route", async () => {
     const onLogout = jest.fn();
     const screen = await render(
       <HomeScreen onLogout={onLogout} onOpenNotifications={jest.fn()} />,
@@ -214,6 +214,6 @@ describe("logout", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Log out" }));
 
     await waitFor(() => expect(onLogout).toHaveBeenCalledTimes(1));
-    expect(mockSupabase.auth.signOut).toHaveBeenCalledTimes(1);
+    expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
   });
 });

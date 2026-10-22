@@ -11,7 +11,7 @@ import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
-import { supabase } from "../../lib/supabase";
+import { ProductCard } from "../products/ProductCard";
 
 type HomeScreenProps = {
   navigation?: AuthenticatedNavigation;
@@ -28,17 +28,12 @@ export function HomeScreen({
   onOpenWatchedItems = () => undefined,
   onOpenPopularProducts = () => undefined,
 }: HomeScreenProps) {
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    onLogout();
-  }
-
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <AuthenticatedHeader
           navigation={navigation}
-          onLogout={handleLogout}
+          onLogout={onLogout}
           onNavigate={(route) => {
             if (route === "/watched-items") onOpenWatchedItems();
             else if (route === "/home/popular-products")
@@ -73,9 +68,19 @@ export function HomeScreen({
           <Text style={styles.sectionTitle}>Recommended</Text>
 
           <View style={styles.productRow}>
-            <ProductCard name="Product Name" store="Amazon" price="$24.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$24.99"
+              store="Amazon"
+            />
 
-            <ProductCard name="Product Name" store="Target" price="$39.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$39.99"
+              store="Target"
+            />
           </View>
         </View>
 
@@ -93,33 +98,23 @@ export function HomeScreen({
           </View>
 
           <View style={styles.productRow}>
-            <ProductCard name="Product Name" store="Walmart" price="$19.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$19.99"
+              store="Walmart"
+            />
 
-            <ProductCard name="Product Name" store="Amazon" price="$49.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$49.99"
+              store="Amazon"
+            />
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-type ProductCardProps = {
-  name: string;
-  store: string;
-  price: string;
-};
-
-function ProductCard({ name, store, price }: ProductCardProps) {
-  return (
-    <View style={styles.productCard}>
-      <View style={styles.productImage}>
-        <Text style={styles.imageText}>IMG</Text>
-      </View>
-
-      <Text style={styles.productName}>{name}</Text>
-      <Text style={styles.productStore}>{store}</Text>
-      <Text style={styles.productPrice}>{price}</Text>
-    </View>
   );
 }
 
@@ -186,47 +181,5 @@ const styles = StyleSheet.create({
   productRow: {
     flexDirection: "row",
     gap: 14,
-  },
-
-  productCard: {
-    flex: 1,
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#2b2b2b",
-    borderRadius: 12,
-    padding: 12,
-  },
-
-  productImage: {
-    height: 110,
-    backgroundColor: "#252525",
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-
-  imageText: {
-    color: "#777",
-    fontSize: 14,
-  },
-
-  productName: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-
-  productStore: {
-    color: "#888",
-    fontSize: 13,
-    marginBottom: 6,
-  },
-
-  productPrice: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "700",
   },
 });
