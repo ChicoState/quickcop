@@ -13,6 +13,7 @@ describe("ProductPreviewController", () => {
       priceCents: 2499,
       currency: "USD",
       sourceUrl: "https://store.example/products/widget",
+      images: [],
     };
     const controller = new ProductPreviewController({
       preview: async (url) => {

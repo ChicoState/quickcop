@@ -6,6 +6,7 @@ type ProductPreview = {
   priceCents: number;
   currency: string;
   sourceUrl: string;
+  images: string[];
 };
 
 type ApiError = {
@@ -58,6 +59,7 @@ async function main(): Promise<void> {
     console.log(`\nName: ${preview.name}`);
     console.log(`Price: ${formatPrice(preview.priceCents, preview.currency)}`);
     console.log(`Source: ${preview.sourceUrl}`);
+    console.log(formatImageUrls(preview.images));
   } catch (error) {
     console.error(
       error instanceof Error
@@ -70,6 +72,11 @@ async function main(): Promise<void> {
   }
 }
 
+export function formatImageUrls(images: string[]): string {
+  if (images.length === 0) return "Images: none";
+  return ["Images:", ...images.map((image) => `- ${image}`)].join("\n");
+}
+
 function isProductPreview(value: unknown): value is ProductPreview {
   if (typeof value !== "object" || value === null) return false;
   const preview = value as Record<string, unknown>;
@@ -77,7 +84,9 @@ function isProductPreview(value: unknown): value is ProductPreview {
     typeof preview.name === "string" &&
     typeof preview.priceCents === "number" &&
     typeof preview.currency === "string" &&
-    typeof preview.sourceUrl === "string"
+    typeof preview.sourceUrl === "string" &&
+    Array.isArray(preview.images) &&
+    preview.images.every((image) => typeof image === "string")
   );
 }
 

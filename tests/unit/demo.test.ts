@@ -1,6 +1,9 @@
 import { describe, expect, it, jest } from "@jest/globals";
 
-import { requestProductPreview } from "../../apps/api/src/demo";
+import {
+  formatImageUrls,
+  requestProductPreview,
+} from "../../apps/api/src/demo";
 
 describe("requestProductPreview", () => {
   it("submits a product URL and returns the API preview", async () => {
@@ -12,6 +15,7 @@ describe("requestProductPreview", () => {
             priceCents: 2499,
             currency: "USD",
             sourceUrl: "https://store.example/products/widget",
+            images: [],
           }),
           { status: 200 },
         ),
@@ -52,5 +56,20 @@ describe("requestProductPreview", () => {
           ),
       ),
     ).rejects.toThrow("Product name or price was not found.");
+  });
+
+  it("formats returned product image URLs for the terminal demo", () => {
+    expect(
+      formatImageUrls([
+        "https://cdn.example/widget-front.jpg",
+        "https://cdn.example/widget-side.jpg",
+      ]),
+    ).toBe(
+      "Images:\n- https://cdn.example/widget-front.jpg\n- https://cdn.example/widget-side.jpg",
+    );
+  });
+
+  it("reports when a product has no image URLs", () => {
+    expect(formatImageUrls([])).toBe("Images: none");
   });
 });

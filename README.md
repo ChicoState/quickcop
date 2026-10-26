@@ -65,10 +65,12 @@ It listens on port `3000` and accepts a product page URL:
 ```bash
 curl --request POST http://localhost:3000/product-previews \
   --header 'content-type: application/json' \
-  --data '{"url":"https://www.nike.com/t/jaxon-smith-njigba-seattle-seahawks-mens-nike-nfl-game-jersey-rx8b02/67NM03LD78F-00T"}'
+  --data '{"url":"https://store.example/products/widget-123"}'
 ```
 
-On pages with public JSON-LD product metadata, it responds with `name`, integer `priceCents`, ISO `currency`, and `sourceUrl`. It only fetches public HTTPS URLs, refuses redirects and oversized/non-HTML responses, and returns a structured error when a page has no usable product metadata. Retailer pages that require JavaScript or block requests are not supported by this minimal scraper.
+The scraper checks product JSON-LD first, then embedded JSON, standard Open Graph/product meta tags, and common microdata-style meta tags. It responds with `name`, integer `priceCents`, ISO `currency`, and `sourceUrl`. It accepts ordinary price text such as `1299.99`, `$1,299.99`, and `1299.99 USD`.
+
+It also returns an `images` array containing generic HTTP(S) image URLs found in product JSON-LD, embedded product JSON, Open Graph, or Twitter metadata. Relative URLs are resolved against the product page; image bytes are not embedded or persisted. It only fetches public HTTPS URLs, follows up to five redirects after revalidating each destination, and rejects oversized/non-HTML responses. It does not execute JavaScript or bypass bot challenges. For example, the Summit Racing test link may return an Imperva “Pardon Our Interruption” page instead of the product page; the API reports that as `UNSUPPORTED_PAGE` rather than pretending the product is missing.
 
 ## Docker and deployment boundary
 
