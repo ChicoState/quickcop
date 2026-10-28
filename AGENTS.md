@@ -7,7 +7,7 @@ This repository has infrastructure only. Read `infrastructure_plan.md` before ch
 ## Repository map
 
 - Front end/mobile: `apps/mobile` — not created yet.
-- API/backend: `apps/api` — not created yet.
+- API/backend: `apps/webScraper-api` — NestJS product-preview API.
 - Infrastructure: `compose.yaml`, `docker/`, `.env.example`.
 - Tooling/tests: `package.json`, TypeScript/ESLint/Jest/Stryker configs, `scripts/`, `tests/`.
 - CI: `.github/workflows/pr-checks.yml` and `.github/workflows/release.yml`.
@@ -18,7 +18,7 @@ This repository has infrastructure only. Read `infrastructure_plan.md` before ch
 
 - Infrastructure work must not add product screens, API routes, domain models, auth, checkout logic, or production data.
 - Do not commit secrets, `.env` files, certificates, reports, generated artifacts, or local database data.
-- The API Dockerfile is intentionally unbuildable until application-owned `apps/api` exists; do not add a fake entrypoint merely to make it build.
+- The API Dockerfile is intentionally unbuildable until the application-owned `apps/webScraper-api` image integration is complete; do not add a fake entrypoint merely to make it build.
 - Only approved partner APIs may later support checkout. Never collect or store card numbers/CVV.
 
 ## Skills and workflow

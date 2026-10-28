@@ -12,7 +12,7 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
 - `.github/workflows/` — pull-request checks and guarded release prerequisite workflow.
 - `.agents/skills/` — project-supplied agent guidance.
 - `apps/mobile` — Expo/React Native Android foundation with local-only login and account-creation UI.
-- `apps/api` — NestJS product-preview API.
+- `apps/webScraper-api` — NestJS product-preview API.
 
 ## Getting Started
 
@@ -57,7 +57,7 @@ The initial Android UI is in `apps/mobile`. It does not authenticate or persist 
 Start the local API with:
 
 ```bash
-npm run api:start
+npm run webscraper:start
 ```
 
 It listens on port `3000` and accepts a product page URL:
@@ -74,7 +74,7 @@ It also returns an `images` array containing generic HTTP(S) image URLs found in
 
 ## Docker and deployment boundary
 
-`compose.yaml` runs pinned `postgres:17.2-bookworm` locally and exposes it only on `127.0.0.1`. `docker/api.Dockerfile` is a hardened future NestJS image template and cannot build until `apps/api` is created by the application phase.
+`compose.yaml` runs pinned `postgres:17.2-bookworm` locally and exposes it only on `127.0.0.1`. `docker/api.Dockerfile` is a hardened future NestJS image template and cannot build until the application-owned `apps/webScraper-api` image integration is completed.
 
 Production is planned for Cloud Run API and worker services with at least one minimum instance each, plus private-IP Cloud SQL PostgreSQL with automated backups. The release workflow deliberately stops at prerequisites while mobile/API entrypoints and real protected-environment settings are absent; it does not publish, deploy, migrate, or contact Google Cloud.
 

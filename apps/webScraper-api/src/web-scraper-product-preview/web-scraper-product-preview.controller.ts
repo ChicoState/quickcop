@@ -8,13 +8,13 @@ import {
 } from "@nestjs/common";
 
 import {
-  ProductPreviewError,
-  ProductPreviewService,
-  type ProductPreview,
-} from "./product-preview.service";
+  WebScraperProductPreviewError,
+  WebScraperProductPreviewService,
+  type WebScraperProductPreview,
+} from "./web-scraper-product-preview.service";
 
-type ProductPreviewer = {
-  preview(url: string): Promise<ProductPreview>;
+type WebScraperProductPreviewer = {
+  preview(url: string): Promise<WebScraperProductPreview>;
 };
 
 type PreviewProductRequest = {
@@ -22,14 +22,16 @@ type PreviewProductRequest = {
 };
 
 @Controller("product-previews")
-export class ProductPreviewController {
+export class WebScraperProductPreviewController {
   constructor(
-    @Inject(ProductPreviewService)
-    private readonly productPreviewService: ProductPreviewer,
+    @Inject(WebScraperProductPreviewService)
+    private readonly productPreviewService: WebScraperProductPreviewer,
   ) {}
 
   @Post()
-  async create(@Body() body: PreviewProductRequest): Promise<ProductPreview> {
+  async create(
+    @Body() body: PreviewProductRequest,
+  ): Promise<WebScraperProductPreview> {
     if (typeof body?.url !== "string" || body.url.trim().length === 0) {
       throw apiError(
         HttpStatus.BAD_REQUEST,
@@ -41,7 +43,7 @@ export class ProductPreviewController {
     try {
       return await this.productPreviewService.preview(body.url.trim());
     } catch (error) {
-      if (error instanceof ProductPreviewError) {
+      if (error instanceof WebScraperProductPreviewError) {
         throw productPreviewApiError(error.code);
       }
       throw error;
@@ -50,7 +52,7 @@ export class ProductPreviewController {
 }
 
 function productPreviewApiError(
-  code: ProductPreviewError["code"],
+  code: WebScraperProductPreviewError["code"],
 ): HttpException {
   switch (code) {
     case "INVALID_URL":

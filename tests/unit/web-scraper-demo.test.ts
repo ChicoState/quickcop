@@ -2,10 +2,10 @@ import { describe, expect, it, jest } from "@jest/globals";
 
 import {
   formatImageUrls,
-  requestProductPreview,
-} from "../../apps/api/src/demo";
+  requestWebScraperProductPreview,
+} from "../../apps/webScraper-api/src/web-scraper-demo";
 
-describe("requestProductPreview", () => {
+describe("requestWebScraperProductPreview", () => {
   it("submits a product URL and returns the API preview", async () => {
     const fetcher = jest.fn(
       async () =>
@@ -22,7 +22,7 @@ describe("requestProductPreview", () => {
     );
 
     await expect(
-      requestProductPreview(
+      requestWebScraperProductPreview(
         "https://store.example/products/widget",
         "http://localhost:3000",
         fetcher,
@@ -41,7 +41,7 @@ describe("requestProductPreview", () => {
 
   it("shows the API error message when a preview cannot be created", async () => {
     await expect(
-      requestProductPreview(
+      requestWebScraperProductPreview(
         "https://store.example/products/missing",
         "http://localhost:3000",
         async () =>

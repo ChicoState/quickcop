@@ -1,21 +1,21 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { ProductPreviewController } from "../../apps/api/src/product-preview/product-preview.controller";
+import { WebScraperProductPreviewController } from "../../apps/webScraper-api/src/web-scraper-product-preview/web-scraper-product-preview.controller";
 import {
-  ProductPreviewError,
-  type ProductPreview,
-} from "../../apps/api/src/product-preview/product-preview.service";
+  WebScraperProductPreviewError,
+  type WebScraperProductPreview,
+} from "../../apps/webScraper-api/src/web-scraper-product-preview/web-scraper-product-preview.service";
 
-describe("ProductPreviewController", () => {
+describe("WebScraperProductPreviewController", () => {
   it("passes a submitted product link to the preview service", async () => {
-    const preview: ProductPreview = {
+    const preview: WebScraperProductPreview = {
       name: "Widget",
       priceCents: 2499,
       currency: "USD",
       sourceUrl: "https://store.example/products/widget",
       images: [],
     };
-    const controller = new ProductPreviewController({
+    const controller = new WebScraperProductPreviewController({
       preview: async (url) => {
         expect(url).toBe("https://store.example/products/widget");
         return preview;
@@ -28,7 +28,7 @@ describe("ProductPreviewController", () => {
   });
 
   it("rejects a request without a URL", async () => {
-    const controller = new ProductPreviewController({
+    const controller = new WebScraperProductPreviewController({
       preview: async () => fail(),
     });
 
@@ -39,9 +39,9 @@ describe("ProductPreviewController", () => {
   });
 
   it("maps a missing product to a 422 response", async () => {
-    const controller = new ProductPreviewController({
+    const controller = new WebScraperProductPreviewController({
       preview: async () => {
-        throw new ProductPreviewError("PRODUCT_NOT_FOUND");
+        throw new WebScraperProductPreviewError("PRODUCT_NOT_FOUND");
       },
     });
 

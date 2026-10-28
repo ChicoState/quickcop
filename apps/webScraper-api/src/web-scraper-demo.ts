@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
-type ProductPreview = {
+type WebScraperProductPreview = {
   name: string;
   priceCents: number;
   currency: string;
@@ -15,11 +15,11 @@ type ApiError = {
   };
 };
 
-export async function requestProductPreview(
+export async function requestWebScraperProductPreview(
   url: string,
   apiUrl = "http://localhost:3000",
   fetcher: typeof fetch = fetch,
-): Promise<ProductPreview> {
+): Promise<WebScraperProductPreview> {
   const response = await fetcher(
     `${apiUrl.replace(/\/$/, "")}/product-previews`,
     {
@@ -39,7 +39,7 @@ export async function requestProductPreview(
     );
   }
 
-  if (!isProductPreview(payload)) {
+  if (!isWebScraperProductPreview(payload)) {
     throw new Error("The API returned an unexpected response.");
   }
 
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
       throw new Error("A product URL is required.");
     }
 
-    const preview = await requestProductPreview(url);
+    const preview = await requestWebScraperProductPreview(url);
     console.log(`\nName: ${preview.name}`);
     console.log(`Price: ${formatPrice(preview.priceCents, preview.currency)}`);
     console.log(`Source: ${preview.sourceUrl}`);
@@ -77,7 +77,9 @@ export function formatImageUrls(images: string[]): string {
   return ["Images:", ...images.map((image) => `- ${image}`)].join("\n");
 }
 
-function isProductPreview(value: unknown): value is ProductPreview {
+function isWebScraperProductPreview(
+  value: unknown,
+): value is WebScraperProductPreview {
   if (typeof value !== "object" || value === null) return false;
   const preview = value as Record<string, unknown>;
   return (

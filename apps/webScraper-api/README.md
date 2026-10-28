@@ -1,4 +1,4 @@
-# QuickCop Product-preview API
+# QuickCop webScraper-api
 
 This NestJS API accepts a public product-page link and returns its name and listed price when the page exposes usable product metadata. It checks JSON-LD, embedded JSON, Open Graph/product meta tags, and HTML microdata such as `itemprop` values in that order.
 
@@ -8,7 +8,7 @@ Use Node.js 22.14.0 and install dependencies at the repository root:
 
 ```bash
 npm ci
-npm run api:start
+npm run webscraper:start
 ```
 
 The API listens on `http://localhost:3000`.
@@ -59,13 +59,13 @@ Possible error codes are `INVALID_URL`, `UNSAFE_URL`, `FETCH_FAILED`, `UNSUPPORT
 Start the API in one terminal:
 
 ```bash
-npm run api:start
+npm run webscraper:start
 ```
 
 In another terminal, run:
 
 ```bash
-npm run api:demo
+npm run webscraper:demo
 ```
 
 Paste a product URL at the prompt. The demo prints the product name, formatted price, source URL, and any returned image URLs.

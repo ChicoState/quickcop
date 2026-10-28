@@ -1,11 +1,11 @@
 import { describe, expect, it } from "@jest/globals";
 
 import {
-  ProductPreviewError,
-  ProductPreviewService,
-} from "../../apps/api/src/product-preview/product-preview.service";
+  WebScraperProductPreviewError,
+  WebScraperProductPreviewService,
+} from "../../apps/webScraper-api/src/web-scraper-product-preview/web-scraper-product-preview.service";
 
-describe("ProductPreviewService", () => {
+describe("WebScraperProductPreviewService", () => {
   it("returns a product name and current price from JSON-LD metadata", async () => {
     const service = createService(async () => productPageResponse());
 
@@ -21,7 +21,7 @@ describe("ProductPreviewService", () => {
   });
 
   it("rejects a non-HTTPS link before fetching it", async () => {
-    const service = new ProductPreviewService(async () =>
+    const service = new WebScraperProductPreviewService(async () =>
       productPageResponse(),
     );
 
@@ -29,7 +29,7 @@ describe("ProductPreviewService", () => {
       service.preview("http://store.example/products/widget"),
     ).rejects.toMatchObject({
       code: "INVALID_URL",
-    } satisfies Partial<ProductPreviewError>);
+    } satisfies Partial<WebScraperProductPreviewError>);
   });
 
   it("returns PRODUCT_NOT_FOUND when product metadata has no price", async () => {
@@ -45,7 +45,7 @@ describe("ProductPreviewService", () => {
       service.preview("https://store.example/products/widget"),
     ).rejects.toMatchObject({
       code: "PRODUCT_NOT_FOUND",
-    } satisfies Partial<ProductPreviewError>);
+    } satisfies Partial<WebScraperProductPreviewError>);
   });
 
   it("finds a product nested inside a JSON-LD product group", async () => {
@@ -140,7 +140,7 @@ describe("ProductPreviewService", () => {
       service.preview("https://store.example/parts/widget-123"),
     ).rejects.toMatchObject({
       code: "UNSUPPORTED_PAGE",
-    } satisfies Partial<ProductPreviewError>);
+    } satisfies Partial<WebScraperProductPreviewError>);
   });
 
   it("falls back to Twitter image metadata when product JSON has no image", async () => {
@@ -251,8 +251,11 @@ function productPageResponse(): Response {
 
 function createService(
   fetcher: (url: URL) => Promise<Response>,
-): ProductPreviewService {
-  return new ProductPreviewService(fetcher, async (url) => new URL(url));
+): WebScraperProductPreviewService {
+  return new WebScraperProductPreviewService(
+    fetcher,
+    async (url) => new URL(url),
+  );
 }
 
 function htmlResponse(html: string): Response {

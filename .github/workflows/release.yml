@@ -23,7 +23,7 @@ jobs:
           API_SERVICE: ${{ vars.CLOUD_RUN_API_SERVICE }}
           WORKER_SERVICE: ${{ vars.CLOUD_RUN_WORKER_SERVICE }}
         run: |
-          test -f apps/api/package.json
+          test -f apps/webScraper-api/package.json
           test -f apps/mobile/package.json
           test -n "$GCP_PROJECT_ID" && test -n "$GCP_REGION" && test -n "$CLOUD_SQL_INSTANCE"
           test -n "$API_SERVICE" && test -n "$WORKER_SERVICE"

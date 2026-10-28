@@ -3,7 +3,12 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["coverage/**", "node_modules/**", "dist/**", "apps/api/dist/**"],
+    ignores: [
+      "coverage/**",
+      "node_modules/**",
+      "dist/**",
+      "apps/webScraper-api/dist/**",
+    ],
   },
   {
     files: ["**/*.cjs"],

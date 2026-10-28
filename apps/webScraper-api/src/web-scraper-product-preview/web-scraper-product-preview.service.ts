@@ -5,7 +5,7 @@ const MAX_HTML_BYTES = 1_000_000;
 const FETCH_TIMEOUT_MS = 5_000;
 const MAX_REDIRECTS = 5;
 
-export type ProductPreview = {
+export type WebScraperProductPreview = {
   name: string;
   priceCents: number;
   currency: string;
@@ -13,15 +13,15 @@ export type ProductPreview = {
   images: string[];
 };
 
-export type ProductPreviewErrorCode =
+export type WebScraperProductPreviewErrorCode =
   | "INVALID_URL"
   | "UNSAFE_URL"
   | "FETCH_FAILED"
   | "UNSUPPORTED_PAGE"
   | "PRODUCT_NOT_FOUND";
 
-export class ProductPreviewError extends Error {
-  constructor(readonly code: ProductPreviewErrorCode) {
+export class WebScraperProductPreviewError extends Error {
+  constructor(readonly code: WebScraperProductPreviewErrorCode) {
     super(code);
   }
 }
@@ -29,13 +29,13 @@ export class ProductPreviewError extends Error {
 type Fetcher = (url: URL) => Promise<Response>;
 type UrlValidator = (url: string) => Promise<URL>;
 
-export class ProductPreviewService {
+export class WebScraperProductPreviewService {
   constructor(
     private readonly fetcher: Fetcher = fetchProductPage,
     private readonly validateUrl: UrlValidator = assertPublicHttpsUrl,
   ) {}
 
-  async preview(rawUrl: string): Promise<ProductPreview> {
+  async preview(rawUrl: string): Promise<WebScraperProductPreview> {
     let url = await this.validateUrl(rawUrl);
     let response: Response;
 
@@ -43,30 +43,30 @@ export class ProductPreviewService {
       response = await this.fetcher(url);
       if (![301, 302, 303, 307, 308].includes(response.status)) break;
       if (redirectCount >= MAX_REDIRECTS) {
-        throw new ProductPreviewError("FETCH_FAILED");
+        throw new WebScraperProductPreviewError("FETCH_FAILED");
       }
 
       const location = response.headers.get("location");
-      if (!location) throw new ProductPreviewError("FETCH_FAILED");
+      if (!location) throw new WebScraperProductPreviewError("FETCH_FAILED");
       url = await this.validateUrl(new URL(location, url).toString());
     }
 
     if (!response.ok) {
-      throw new ProductPreviewError("FETCH_FAILED");
+      throw new WebScraperProductPreviewError("FETCH_FAILED");
     }
 
     if (!response.headers.get("content-type")?.includes("text/html")) {
-      throw new ProductPreviewError("UNSUPPORTED_PAGE");
+      throw new WebScraperProductPreviewError("UNSUPPORTED_PAGE");
     }
 
     const html = await readHtml(response);
     if (isChallengePage(html)) {
-      throw new ProductPreviewError("UNSUPPORTED_PAGE");
+      throw new WebScraperProductPreviewError("UNSUPPORTED_PAGE");
     }
 
     const product = findProduct(html, url);
     if (!product) {
-      throw new ProductPreviewError("PRODUCT_NOT_FOUND");
+      throw new WebScraperProductPreviewError("PRODUCT_NOT_FOUND");
     }
 
     return {
@@ -85,7 +85,7 @@ async function assertPublicHttpsUrl(rawUrl: string): Promise<URL> {
   try {
     url = new URL(rawUrl);
   } catch {
-    throw new ProductPreviewError("INVALID_URL");
+    throw new WebScraperProductPreviewError("INVALID_URL");
   }
 
   if (
@@ -94,12 +94,12 @@ async function assertPublicHttpsUrl(rawUrl: string): Promise<URL> {
     url.password ||
     !url.hostname
   ) {
-    throw new ProductPreviewError("INVALID_URL");
+    throw new WebScraperProductPreviewError("INVALID_URL");
   }
 
   if (isIP(url.hostname)) {
     if (!isPublicIpAddress(url.hostname)) {
-      throw new ProductPreviewError("UNSAFE_URL");
+      throw new WebScraperProductPreviewError("UNSAFE_URL");
     }
     return url;
   }
@@ -108,14 +108,14 @@ async function assertPublicHttpsUrl(rawUrl: string): Promise<URL> {
   try {
     addresses = await lookup(url.hostname, { all: true });
   } catch {
-    throw new ProductPreviewError("INVALID_URL");
+    throw new WebScraperProductPreviewError("INVALID_URL");
   }
 
   if (
     !addresses.length ||
     addresses.some(({ address }) => !isPublicIpAddress(address))
   ) {
-    throw new ProductPreviewError("UNSAFE_URL");
+    throw new WebScraperProductPreviewError("UNSAFE_URL");
   }
 
   return url;
@@ -134,19 +134,19 @@ async function fetchProductPage(url: URL): Promise<Response> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch {
-    throw new ProductPreviewError("FETCH_FAILED");
+    throw new WebScraperProductPreviewError("FETCH_FAILED");
   }
 }
 
 async function readHtml(response: Response): Promise<string> {
   const contentLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > MAX_HTML_BYTES) {
-    throw new ProductPreviewError("UNSUPPORTED_PAGE");
+    throw new WebScraperProductPreviewError("UNSUPPORTED_PAGE");
   }
 
   const reader = response.body?.getReader();
   if (!reader) {
-    throw new ProductPreviewError("UNSUPPORTED_PAGE");
+    throw new WebScraperProductPreviewError("UNSUPPORTED_PAGE");
   }
 
   const chunks: Uint8Array[] = [];
@@ -157,7 +157,7 @@ async function readHtml(response: Response): Promise<string> {
     length += value.byteLength;
     if (length > MAX_HTML_BYTES) {
       await reader.cancel();
-      throw new ProductPreviewError("UNSUPPORTED_PAGE");
+      throw new WebScraperProductPreviewError("UNSUPPORTED_PAGE");
     }
     chunks.push(value);
   }
@@ -171,7 +171,10 @@ async function readHtml(response: Response): Promise<string> {
   return new TextDecoder().decode(html);
 }
 
-function findProduct(html: string, baseUrl: URL): ProductPreview | undefined {
+function findProduct(
+  html: string,
+  baseUrl: URL,
+): WebScraperProductPreview | undefined {
   const scripts = html.matchAll(
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
   );
@@ -205,7 +208,7 @@ function findProduct(html: string, baseUrl: URL): ProductPreview | undefined {
 function findEmbeddedProduct(
   html: string,
   baseUrl: URL,
-): ProductPreview | undefined {
+): WebScraperProductPreview | undefined {
   const scripts = html.matchAll(
     /<script[^>]+type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi,
   );
@@ -237,7 +240,7 @@ function* flattenJson(data: unknown): Generator<Record<string, unknown>> {
 function toEmbeddedProduct(
   item: Record<string, unknown>,
   baseUrl: URL,
-): ProductPreview | undefined {
+): WebScraperProductPreview | undefined {
   const name = item.item_name ?? item.productName ?? item.name;
   if (typeof name !== "string" || name.trim().length === 0) return;
 
@@ -283,7 +286,7 @@ function* flattenJsonLd(data: unknown): Generator<Record<string, unknown>> {
 function toProductPreview(
   item: Record<string, unknown>,
   baseUrl: URL,
-): ProductPreview | undefined {
+): WebScraperProductPreview | undefined {
   const types = Array.isArray(item["@type"]) ? item["@type"] : [item["@type"]];
   if (!types.includes("Product") || typeof item.name !== "string") return;
 
@@ -329,7 +332,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function findMetadataProduct(html: string): ProductPreview | undefined {
+function findMetadataProduct(
+  html: string,
+): WebScraperProductPreview | undefined {
   const metadata = new Map<string, string>();
   for (const tag of html.matchAll(/<meta\b[^>]*>/gi)) {
     const attributes = parseAttributes(tag[0]);
@@ -369,7 +374,9 @@ function findMetadataProduct(html: string): ProductPreview | undefined {
   };
 }
 
-function findMicrodataProduct(html: string): ProductPreview | undefined {
+function findMicrodataProduct(
+  html: string,
+): WebScraperProductPreview | undefined {
   const values = new Map<string, string>();
   const pattern =
     /<([a-z][\w-]*)\b([^>]*\bitemprop\s*=\s*["']([^"']+)["'][^>]*)>([\s\S]*?)<\/\1>/gi;
