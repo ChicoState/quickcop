@@ -20,6 +20,7 @@ describe("AuthenticatedHeader", () => {
       ["Recommended", "/recommended"],
       ["Popular", "/home/popular-products"],
       ["Notifications", "/notifications"],
+      ["Quick Checkout", "/quick-checkout"],
     ]) {
       await fireEvent.press(screen.getByRole("button", { name: route[0] }));
       expect(replace).toHaveBeenLastCalledWith(route[1]);
