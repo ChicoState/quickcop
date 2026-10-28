@@ -4,13 +4,12 @@ jest.mock("../lib/supabase", () => ({
 
 jest.mock("../features/products/ProductCard", () => ({
   ProductCard: ({ name }: { name: string }) => {
-    const { Text: MockText } = require("react-native");
     return <MockText testID="shared-product-card">{name}</MockText>;
   },
 }));
 
 import { fireEvent, render } from "@testing-library/react-native";
-import { Text } from "react-native";
+import { Text as MockText } from "react-native";
 
 import { HomeScreen } from "../features/home/HomeScreen";
 
