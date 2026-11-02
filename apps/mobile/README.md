@@ -1,6 +1,6 @@
 # QuickCop mobile
 
-Expo/React Native Android foundation. Authentication is intentionally local-only for this first UI slice: entered email, phone number, username, and password are never persisted, logged, or sent over the network.
+Expo/React Native Android client. Authentication uses Supabase Auth with email/password credentials. Only the public project URL and publishable key belong in the mobile configuration; never put service-role keys, database passwords, or access tokens in Expo variables.
 
 ## Commands
 
@@ -14,7 +14,17 @@ npm test -- --runInBand
 npm run typecheck
 ```
 
-The login screen is the initial route. A valid local login or account-creation form takes the user to an empty home screen; **Log out** returns to login.
+Set these values in a local, uncommitted `apps/mobile/.env` file:
+
+```dotenv
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+EXPO_PUBLIC_API_URL=https://your-api.example.com
+```
+
+For local Supabase development, use the local project URL appropriate to the emulator (`http://10.0.2.2:54321` for Android). For the local API, use `http://10.0.2.2:3000` from Android. EAS builds should receive the public Supabase values and HTTPS API URL through EAS environment variables. The app fails closed when required configuration is missing or invalid.
+
+The login screen is the initial public route. Protected routes require a restored Supabase session; **Log out** clears the device session immediately and reports if remote revocation could not be completed.
 
 ## Android SDK launch
 

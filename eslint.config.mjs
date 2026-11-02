@@ -8,6 +8,10 @@ export default [
       "node_modules/**",
       "dist/**",
       "apps/webScraper-api/dist/**",
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/coverage/**",
+      "**/.expo/**",
     ],
   },
   {

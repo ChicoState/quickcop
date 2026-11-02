@@ -2,11 +2,12 @@
 
 ## Status and source of truth
 
-This repository has infrastructure only. Read `infrastructure_plan.md` before changing tooling, hosting, security, database, release, or stack choices. The plan selects Expo/React Native Android, NestJS, PostgreSQL, Docker for local services, Cloud Run API/worker services (`min-instances >= 1`), and Cloud SQL private IP. Revise the plan with `infra-planner` before changing any of those decisions.
+This repository contains infrastructure plus initial mobile/API slices. Read `infrastructure_plan.md` before changing tooling, hosting, security, database, release, or stack choices. The plan selects Expo/React Native Android, NestJS, Supabase-managed PostgreSQL, Docker/Supabase CLI for local services, and Cloud Run API/worker services (`min-instances >= 1`). Revise the plan with `infra-planner` before changing any of those decisions.
 
 ## Repository map
 
 - Front end/mobile: `apps/mobile` — not created yet.
+- API/backend: `apps/api` — NestJS/Supabase account boundary and tests; broader application behavior remains incomplete.
 - API/backend: `apps/webScraper-api` — NestJS product-preview API.
 - Infrastructure: `compose.yaml`, `docker/`, `.env.example`.
 - Tooling/tests: `package.json`, TypeScript/ESLint/Jest/Stryker configs, `scripts/`, `tests/`.
@@ -18,7 +19,7 @@ This repository has infrastructure only. Read `infrastructure_plan.md` before ch
 
 - Infrastructure work must not add product screens, API routes, domain models, auth, checkout logic, or production data.
 - Do not commit secrets, `.env` files, certificates, reports, generated artifacts, or local database data.
-- The API Dockerfile is intentionally unbuildable until the application-owned `apps/webScraper-api` image integration is complete; do not add a fake entrypoint merely to make it build.
+- The API Dockerfile is intentionally unbuildable until application-owned `apps/api` exists; do not add a fake entrypoint merely to make it build.
 - Only approved partner APIs may later support checkout. Never collect or store card numbers/CVV.
 
 ## Skills and workflow
@@ -29,7 +30,7 @@ This repository has infrastructure only. Read `infrastructure_plan.md` before ch
 
 ## Verification and lifecycle
 
-After installing with `npm ci` on Node 22.14.0, run `npm run verify`, `npm run audit`, and `npm run test:smoke`. CI mirrors the static checks and coverage harness; it additionally runs Gitleaks and CodeQL. `npm run test:smoke` starts then removes the PostgreSQL service and volume. For manual local use, start with `npm run docker:up` and always clean up with `npm run docker:down`.
+After installing with `npm ci` on Node 22.14.0, verify root and application packages independently: root `npm ci`, `npm test -- --runInBand`, and `npm run typecheck`; then `cd apps/mobile`, run the same three commands. Run API package tests/typecheck through its own package scripts as they are added. Also run `npm run verify`, `npm run audit`, and `npm run test:smoke` for the root harness. The Compose smoke test is not a Supabase-local-stack check; report those environments separately.
 
 ## Change checklist
 

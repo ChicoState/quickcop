@@ -4,59 +4,37 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { CreateAccountScreen } from "../features/auth/CreateAccountScreen";
 import { LoginScreen } from "../features/auth/LoginScreen";
 import { HomeScreen } from "../features/home/HomeScreen";
-import { supabase } from "../lib/supabase";
+import * as authService from "../features/auth/authService";
 
-jest.mock("../lib/supabase", () => ({
-  supabase: {
-    rpc: jest.fn(),
-    auth: {
-      signUp: jest.fn(),
-      signInWithPassword: jest.fn(),
-      signOut: jest.fn(),
-    },
-  },
+jest.mock("../features/auth/authService", () => ({
+  signInWithEmail: jest.fn(),
+  signUpWithEmail: jest.fn(),
+  signOut: jest.fn(),
 }));
 
-// Loosely typed so the mocks accept any resolved value
-type MockFn = jest.Mock<(...args: unknown[]) => Promise<unknown>>;
-
-const mockSupabase = supabase as unknown as {
-  rpc: MockFn;
-  auth: {
-    signUp: MockFn;
-    signInWithPassword: MockFn;
-    signOut: MockFn;
-  };
-};
+const mockAuthService = authService as jest.Mocked<typeof authService>;
 
 beforeEach(() => {
   jest.clearAllMocks();
 
-  // username_available -> true, get_email_for_username -> an email
-  mockSupabase.rpc.mockImplementation((fn: unknown) =>
-    Promise.resolve({
-      data: fn === "username_available" ? true : "person@example.com",
-      error: null,
-    }),
-  );
-  mockSupabase.auth.signUp.mockResolvedValue({
-    data: { session: {} },
-    error: null,
+  mockAuthService.signUpWithEmail.mockResolvedValue({
+    ok: true,
+    sessionCreated: true,
   });
-  mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-  mockSupabase.auth.signOut.mockResolvedValue({ error: null });
+  mockAuthService.signInWithEmail.mockResolvedValue({ ok: true });
+  mockAuthService.signOut.mockResolvedValue({ ok: true });
 });
 
 describe("login", () => {
-  async function submitLogin(onLogin = jest.fn()) {
+  async function submitLogin(
+    onLogin = jest.fn(),
+    email = "person@example.com",
+  ) {
     const screen = await render(
       <LoginScreen onLogin={onLogin} onCreateAccount={jest.fn()} />,
     );
 
-    await fireEvent.changeText(
-      screen.getByLabelText("Username"),
-      "quickcop_user",
-    );
+    await fireEvent.changeText(screen.getByLabelText("Email"), email);
     await fireEvent.changeText(
       screen.getByLabelText("Password"),
       "password123",
@@ -66,41 +44,77 @@ describe("login", () => {
     return { screen, onLogin };
   }
 
-  it("looks up the email, signs in, and opens the home screen", async () => {
+  it("signs in with email and password", async () => {
+    mockAuthService.signInWithEmail.mockResolvedValue({ ok: true });
     const { onLogin } = await submitLogin();
 
     await waitFor(() => expect(onLogin).toHaveBeenCalledTimes(1));
-    expect(mockSupabase.rpc).toHaveBeenCalledWith("get_email_for_username", {
-      p_username: "quickcop_user",
-    });
-    expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
-      email: "person@example.com",
-      password: "password123",
-    });
+    expect(mockAuthService.signInWithEmail).toHaveBeenCalledWith(
+      "person@example.com",
+      "password123",
+    );
   });
 
   it("shows an error when the password is wrong", async () => {
-    mockSupabase.auth.signInWithPassword.mockResolvedValue({
-      error: { message: "Invalid login credentials" },
+    mockAuthService.signInWithEmail.mockResolvedValue({
+      ok: false,
+      failure: { kind: "credentials" },
     });
 
     const { screen, onLogin } = await submitLogin();
 
     await waitFor(() =>
-      expect(screen.getByText("Invalid username or password.")).toBeTruthy(),
+      expect(screen.getByText("Invalid email or password.")).toBeTruthy(),
     );
     expect(onLogin).not.toHaveBeenCalled();
   });
 
-  it("shows the same error when the username does not exist", async () => {
-    mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+  it("uses the same login message for unknown emails and wrong passwords", async () => {
+    mockAuthService.signInWithEmail.mockResolvedValue({
+      ok: false,
+      failure: { kind: "credentials" },
+    });
+
+    const first = await submitLogin(jest.fn(), "unknown@example.com");
+    expect(
+      await first.screen.findByText("Invalid email or password."),
+    ).toBeTruthy();
+
+    const second = await submitLogin(jest.fn(), "person@example.com");
+    expect(
+      await second.screen.findByText("Invalid email or password."),
+    ).toBeTruthy();
+  });
+
+  it("shows a retryable message when the network request fails", async () => {
+    mockAuthService.signInWithEmail.mockResolvedValue({
+      ok: false,
+      failure: { kind: "network" },
+    });
 
     const { screen, onLogin } = await submitLogin();
 
     await waitFor(() =>
-      expect(screen.getByText("Invalid username or password.")).toBeTruthy(),
+      expect(screen.getByText("Unable to connect. Try again.")).toBeTruthy(),
     );
-    expect(mockSupabase.auth.signInWithPassword).not.toHaveBeenCalled();
+    expect(onLogin).not.toHaveBeenCalled();
+  });
+
+  it("does not expose unexpected provider errors as credential failures", async () => {
+    mockAuthService.signInWithEmail.mockResolvedValue({
+      ok: false,
+      failure: { kind: "unknown" },
+    });
+
+    const { screen, onLogin } = await submitLogin();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Authentication is temporarily unavailable. Try again later.",
+        ),
+      ).toBeTruthy(),
+    );
     expect(onLogin).not.toHaveBeenCalled();
   });
 });
@@ -137,35 +151,26 @@ describe("create account", () => {
     const { onAccountCreated } = await submitSignUp();
 
     await waitFor(() => expect(onAccountCreated).toHaveBeenCalledTimes(1));
-    expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
+    expect(mockAuthService.signUpWithEmail).toHaveBeenCalledWith({
       email: "person@example.com",
       password: "password123",
-      options: {
-        data: {
-          username: "quickcop_user",
-          display_name: "quickcop_user",
-          phone: null,
-        },
-      },
+      username: "quickcop_user",
+      phone: null,
     });
   });
 
-  it("rejects a taken username without creating an account", async () => {
-    mockSupabase.rpc.mockResolvedValue({ data: false, error: null });
-
+  it("submits account creation without a client-side username lookup", async () => {
     const { screen, onAccountCreated } = await submitSignUp();
 
-    await waitFor(() =>
-      expect(screen.getByText("That username is taken.")).toBeTruthy(),
-    );
-    expect(mockSupabase.auth.signUp).not.toHaveBeenCalled();
-    expect(onAccountCreated).not.toHaveBeenCalled();
+    await waitFor(() => expect(onAccountCreated).toHaveBeenCalledTimes(1));
+    expect(mockAuthService.signUpWithEmail).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("That username is taken.")).toBeNull();
   });
 
   it("asks the user to confirm their email when no session is returned", async () => {
-    mockSupabase.auth.signUp.mockResolvedValue({
-      data: { session: null },
-      error: null,
+    mockAuthService.signUpWithEmail.mockResolvedValue({
+      ok: true,
+      sessionCreated: false,
     });
 
     const { screen, onAccountCreated } = await submitSignUp();
@@ -182,8 +187,8 @@ describe("create account", () => {
 });
 
 describe("logout", () => {
-  it("signs out and returns to login from the home menu", async () => {
-    const onLogout = jest.fn();
+  it("calls the route logout handler from the home menu", async () => {
+    const onLogout = jest.fn(() => undefined);
     const screen = await render(
       <HomeScreen onLogout={onLogout} onOpenNotifications={jest.fn()} />,
     );
@@ -193,6 +198,5 @@ describe("logout", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Log out" }));
 
     await waitFor(() => expect(onLogout).toHaveBeenCalledTimes(1));
-    expect(mockSupabase.auth.signOut).toHaveBeenCalledTimes(1);
   });
 });

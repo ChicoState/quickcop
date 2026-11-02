@@ -3,15 +3,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { supabase } from "../../lib/supabase";
 import { authStyles } from "./styles";
+import { signUpWithEmail } from "./authService";
 
 type CreateAccountScreenProps = {
   onAccountCreated: () => void;
@@ -60,50 +60,32 @@ export function CreateAccountScreen({
     setError("");
     setLoading(true);
 
-    // 1. Check the username is free
-    const { data: available, error: rpcError } = await supabase.rpc(
-      "username_available",
-      { p_username: trimmedUsername },
-    );
-    if (rpcError) {
-      console.log("username_available error:", rpcError);
+    try {
+      const result = await signUpWithEmail({
+        email: trimmedEmail,
+        password,
+        phone: trimmedPhone || null,
+        username: trimmedUsername,
+      });
+
+      if (!result.ok) {
+        setError(
+          result.failure.kind === "network"
+            ? "Unable to connect. Try again."
+            : "We could not create your account. Check your details and try again.",
+        );
+        return;
+      }
+
+      if (!result.sessionCreated) {
+        setNotice("Check your email to confirm your account, then log in.");
+        return;
+      }
+
+      onAccountCreated();
+    } finally {
       setLoading(false);
-      setError(rpcError.message);
-      return;
     }
-    if (!available) {
-      setLoading(false);
-      setError("That username is taken.");
-      return;
-    }
-
-    // 2. Create the account (the database trigger creates the profile row)
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        data: {
-          username: trimmedUsername,
-          display_name: trimmedUsername,
-          phone: trimmedPhone || null,
-        },
-      },
-    });
-    console.log("signUp result:", { data, error: signUpError });
-    setLoading(false);
-
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
-    }
-
-    // If email confirmation is ON in Supabase, there's no session yet
-    if (!data.session) {
-      setNotice("Check your email to confirm your account, then log in.");
-      return;
-    }
-
-    onAccountCreated();
   }
 
   return (
@@ -120,7 +102,7 @@ export function CreateAccountScreen({
             Create your account.
           </Text>
           <Text style={authStyles.subtitle}>
-            Phone number is optional and will be used for text alerts later.
+            Add your account details to get started.
           </Text>
 
           <View style={authStyles.inputGroup}>

@@ -1,6 +1,6 @@
 # QuickCop
 
-Android-first stock tracking and partner-retailer checkout is planned here. The repository includes an Expo mobile foundation and a minimal NestJS product-preview API; authentication, persistence, stock monitoring, and checkout behavior remain unimplemented.
+Android-first stock tracking and partner-retailer checkout is planned here. The repository contains the development infrastructure plus initial mobile authentication/account UI and a NestJS/Supabase account API slice; product monitoring, notifications, and checkout behavior remain incomplete.
 
 ## Repository map
 
@@ -13,6 +13,7 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
 - `.agents/skills/` — project-supplied agent guidance.
 - `apps/mobile` — Expo/React Native Android foundation with local-only login and account-creation UI.
 - `apps/webScraper-api` — NestJS product-preview API.
+- `apps/api` — initial NestJS/Supabase account boundary and tests; application behavior is incomplete.
 
 ## Getting Started
 
@@ -37,14 +38,21 @@ Android-first stock tracking and partner-retailer checkout is planned here. The 
    docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/workspace -w /workspace node:22.14-bookworm-slim npm ci
    ```
 
-4. Run quality checks and the local database smoke test:
+4. Verify the root package and then the mobile package independently:
 
    ```bash
    npm run verify
+   npm test -- --runInBand
+   npm run typecheck
    npm run test:smoke
+
+   cd apps/mobile
+   npm ci
+   npm test -- --runInBand
+   npm run typecheck
    ```
 
-   `npm test` and `npm run test:integration` validate an empty harness until application-owned tests exist. `npm run test:smoke` starts PostgreSQL, performs only `SELECT 1`, and stops/removes its local volume.
+   Each package's clean `npm ci` must succeed; root `npm ci` does not restore mobile or API dependencies. `npm run test:smoke` starts Compose PostgreSQL, performs only `SELECT 1`, and stops/removes its local volume. It does not validate the Supabase local stack used by application development.
 
 5. For an interactive local database, run `npm run docker:up`; clean it up with `npm run docker:down`.
 
@@ -74,13 +82,13 @@ It also returns an `images` array containing generic HTTP(S) image URLs found in
 
 ## Docker and deployment boundary
 
-`compose.yaml` runs pinned `postgres:17.2-bookworm` locally and exposes it only on `127.0.0.1`. `docker/api.Dockerfile` is a hardened future NestJS image template and cannot build until the application-owned `apps/webScraper-api` image integration is completed.
+`compose.yaml` runs pinned `postgres:17.2-bookworm` locally and exposes it only on `127.0.0.1`; it is retained for the root smoke gate. Application development and Supabase migrations use the Supabase CLI/local stack. `docker/api.Dockerfile` remains a hardened API image template and must be coordinated with the existing `apps/api` application boundary.
 
-Production is planned for Cloud Run API and worker services with at least one minimum instance each, plus private-IP Cloud SQL PostgreSQL with automated backups. The release workflow deliberately stops at prerequisites while mobile/API entrypoints and real protected-environment settings are absent; it does not publish, deploy, migrate, or contact Google Cloud.
+Production is planned for Cloud Run API and worker services with at least one minimum instance each, plus a dedicated Supabase project providing managed PostgreSQL and backups. The release workflow deliberately stops at prerequisites while production credentials and protected-environment settings are absent; it does not publish, deploy, migrate, or contact cloud services.
 
 ## GitHub setup required later
 
-Create a `production` protected environment and configure the plan-named `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `GCP_PROJECT_ID`, `GCP_REGION`, `CLOUD_SQL_INSTANCE`, `CLOUD_RUN_API_SERVICE`, and `CLOUD_RUN_WORKER_SERVICE` variables. Google Play publishing also needs its service-account JSON, Android signing key/password secrets, Google Cloud Workload Identity Federation, Artifact Registry, Cloud Run services, Cloud SQL instance, partner credentials, encryption-key management, and legal/privacy approval.
+Create a `production` protected environment and configure the plan-named Google Cloud, Supabase, partner, encryption, and Android signing credentials. Google Play publishing also needs its service-account JSON and Android signing key/password secrets; Supabase migrations require protected project access and server-only credentials.
 
 ## Troubleshooting
 

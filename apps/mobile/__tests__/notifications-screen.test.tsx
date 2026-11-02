@@ -6,9 +6,29 @@ import {
   type PriceAlert,
 } from "../features/notifications/NotificationsScreen";
 
+const alerts: PriceAlert[] = [
+  {
+    id: "switch-2",
+    kind: "price_change",
+    name: "Nintendo Switch 2",
+    retailer: "Target",
+    previousPrice: "$499.99",
+    currentPrice: "$449.99",
+    targetPrice: "$450.00",
+    enabled: true,
+    createdAt: "2026-10-19T00:00:00.000Z",
+  },
+];
+
 describe("NotificationsScreen", () => {
-  it("shows example price-drop alerts and lets the user toggle an alert locally", async () => {
-    const screen = await render(<NotificationsScreen />);
+  it("shows a server price-drop alert and lets the user toggle it", async () => {
+    const screen = await render(
+      <NotificationsScreen
+        alerts={alerts}
+        onManageDeliveryPreferences={jest.fn()}
+        onToggleAlert={jest.fn().mockResolvedValue(undefined)}
+      />,
+    );
 
     expect(screen.getByText("Nintendo Switch 2")).toBeTruthy();
     expect(
@@ -29,8 +49,13 @@ describe("NotificationsScreen", () => {
   });
 
   it("shows an empty state when no price alerts are available", async () => {
-    const alerts: PriceAlert[] = [];
-    const screen = await render(<NotificationsScreen alerts={alerts} />);
+    const screen = await render(
+      <NotificationsScreen
+        alerts={[]}
+        onManageDeliveryPreferences={jest.fn()}
+        onToggleAlert={jest.fn().mockResolvedValue(undefined)}
+      />,
+    );
 
     expect(screen.getByText("No price alerts yet")).toBeTruthy();
     expect(
@@ -40,18 +65,26 @@ describe("NotificationsScreen", () => {
     ).toBeTruthy();
   });
 
-  it("lets the user toggle notification settings locally", async () => {
-    const screen = await render(<NotificationsScreen />);
-    const priceDropToggle = screen.getByRole("switch", {
-      name: "Price drop notifications",
-    });
+  it("opens delivery preferences without rendering duplicate global settings", async () => {
+    const onManageDeliveryPreferences = jest.fn();
+    const screen = await render(
+      <NotificationsScreen
+        alerts={alerts}
+        onManageDeliveryPreferences={onManageDeliveryPreferences}
+        onToggleAlert={jest.fn().mockResolvedValue(undefined)}
+      />,
+    );
 
-    expect(priceDropToggle.props.value).toBe(true);
-    await fireEvent(priceDropToggle, "valueChange", false);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Manage delivery preferences" }),
+    );
 
+    expect(onManageDeliveryPreferences).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole("switch", { name: "Price drop notifications" }).props
-        .value,
-    ).toBe(false);
+      screen.queryByRole("switch", { name: "Price drop notifications" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("switch", { name: "Back in stock notifications" }),
+    ).toBeNull();
   });
 });

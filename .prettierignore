@@ -3,3 +3,4 @@ coverage
 dist
 package-lock.json
 .agents/
+supabase/.temp
