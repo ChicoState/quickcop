@@ -9,7 +9,10 @@ export default function HomeRoute() {
 
   return (
     <HomeScreen
-      navigation={{ replace: (route) => router.replace(route as never) }}
+      navigation={{
+        push: (route) => router.push(`/(protected)${route}` as never),
+        replace: (route) => router.replace(route as never),
+      }}
       onAccountInfo={() => router.push("/(protected)/account")}
       onLogout={async () => {
         let result = { ok: false };

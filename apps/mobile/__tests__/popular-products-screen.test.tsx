@@ -1,8 +1,11 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
 import { PopularProductsScreen } from "../features/popular-products/PopularProductsScreen";
+import { getCartItems, resetCartForTests } from "../features/cart/cartStore";
 
 describe("PopularProductsScreen", () => {
+  afterEach(() => resetCartForTests());
+
   it("shows placeholder products with their stores and prices", async () => {
     const screen = await render(<PopularProductsScreen />);
 
@@ -32,5 +35,21 @@ describe("PopularProductsScreen", () => {
       screen.getByText("Pokémon TCG: Prismatic Evolutions ETB"),
     ).toBeTruthy();
     expect(screen.queryByText("Sony WH-1000XM6")).toBeNull();
+  });
+
+  it("adds a popular product to the cart", async () => {
+    const screen = await render(<PopularProductsScreen />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add Nintendo Switch 2 to cart" }),
+    );
+
+    expect(getCartItems()).toEqual([
+      expect.objectContaining({
+        name: "Nintendo Switch 2",
+        retailer: "Target",
+        price: 449.99,
+      }),
+    ]);
   });
 });

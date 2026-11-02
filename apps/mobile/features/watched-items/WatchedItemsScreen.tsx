@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Pressable,
@@ -15,34 +15,17 @@ import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
+import {
+  addWatchedItem,
+  getWatchedItems,
+  loadWatchedItems,
+  removeWatchedItem,
+  updateWatchedItemAlert,
+  type WatchedItem,
+} from "./watchedItemsStore";
+import { addCartItem } from "../cart/cartStore";
 
-export type WatchedItem = {
-  id: string;
-  name: string;
-  store: string;
-  currentPrice: string;
-  targetPrice: string;
-  alertEnabled: boolean;
-};
-
-const placeholderItems: WatchedItem[] = [
-  {
-    id: "switch-2",
-    name: "Nintendo Switch 2",
-    store: "Target",
-    currentPrice: "$449.99",
-    targetPrice: "$450.00",
-    alertEnabled: true,
-  },
-  {
-    id: "headphones",
-    name: "Sony WH-1000XM6",
-    store: "Amazon",
-    currentPrice: "$398.00",
-    targetPrice: "$400.00",
-    alertEnabled: false,
-  },
-];
+export type { WatchedItem } from "./watchedItemsStore";
 
 type WatchedItemsScreenProps = {
   initialItems?: WatchedItem[];
@@ -51,11 +34,16 @@ type WatchedItemsScreenProps = {
 };
 
 export function WatchedItemsScreen({
-  initialItems = placeholderItems,
+  initialItems,
   navigation,
   onLogout,
 }: WatchedItemsScreenProps) {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState(initialItems ?? getWatchedItems());
+
+  useEffect(() => {
+    if (initialItems) return;
+    void loadWatchedItems().then(setItems);
+  }, [initialItems]);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [name, setName] = useState("");
   const [store, setStore] = useState("");
@@ -76,17 +64,16 @@ export function WatchedItemsScreen({
       return;
     }
 
-    setItems((currentItems) => [
-      ...currentItems,
-      {
-        id: `${name.trim()}-${Date.now()}`,
-        name: name.trim(),
-        store: store.trim(),
-        currentPrice: formatPrice(currentPrice.trim()),
-        targetPrice: formatPrice(targetPrice.trim()),
-        alertEnabled: true,
-      },
-    ]);
+    const item = {
+      id: `${name.trim()}-${Date.now()}`,
+      name: name.trim(),
+      store: store.trim(),
+      currentPrice: formatPrice(currentPrice.trim()),
+      targetPrice: formatPrice(targetPrice.trim()),
+      alertEnabled: true,
+    };
+    addWatchedItem(item);
+    setItems((currentItems) => [...currentItems, item]);
     setName("");
     setStore("");
     setCurrentPrice("");
@@ -95,10 +82,12 @@ export function WatchedItemsScreen({
   }
 
   function removeItem(id: string) {
+    removeWatchedItem(id);
     setItems((currentItems) => currentItems.filter((item) => item.id !== id));
   }
 
   function setAlertEnabled(id: string, alertEnabled: boolean) {
+    updateWatchedItemAlert(id, alertEnabled);
     setItems((currentItems) =>
       currentItems.map((item) =>
         item.id === id ? { ...item, alertEnabled } : item,
@@ -202,10 +191,19 @@ export function WatchedItemsScreen({
             {items.map((item) => (
               <View key={item.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
-                  <View style={styles.itemContent}>
+                  <Pressable
+                    accessibilityLabel={`View details for ${item.name}`}
+                    accessibilityRole="button"
+                    onPress={() =>
+                      navigation?.push?.(
+                        `/watched-items/${encodeURIComponent(item.id)}`,
+                      )
+                    }
+                    style={styles.itemContent}
+                  >
                     <Text style={styles.productName}>{item.name}</Text>
                     <Text style={styles.store}>{item.store}</Text>
-                  </View>
+                  </Pressable>
                   <Switch
                     accessibilityLabel={`${item.name} price alert`}
                     onValueChange={(enabled) =>
@@ -231,6 +229,24 @@ export function WatchedItemsScreen({
                   style={styles.unwatchButton}
                 >
                   <Text style={styles.unwatchButtonText}>Unwatch</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel={`Add ${item.name} to cart`}
+                  accessibilityRole="button"
+                  onPress={() =>
+                    addCartItem({
+                      id: item.id,
+                      name: item.name,
+                      retailer: item.store,
+                      productUrl: item.productUrl,
+                      price: item.currentPrice.startsWith("$")
+                        ? Number.parseFloat(item.currentPrice.replace("$", ""))
+                        : null,
+                    })
+                  }
+                  style={styles.cartButton}
+                >
+                  <Text style={styles.cartButtonText}>Add to cart</Text>
                 </Pressable>
               </View>
             ))}
@@ -312,6 +328,8 @@ const styles = StyleSheet.create({
   targetPrice: { color: "#79DCA0", fontSize: 15, fontWeight: "600" },
   unwatchButton: { alignSelf: "flex-start", marginTop: 16 },
   unwatchButtonText: { color: "#ff7777", fontSize: 14, fontWeight: "600" },
+  cartButton: { alignSelf: "flex-start", marginTop: 12 },
+  cartButtonText: { color: "#79DCA0", fontSize: 14, fontWeight: "600" },
   emptyCard: {
     backgroundColor: "#161616",
     borderColor: "#2b2b2b",

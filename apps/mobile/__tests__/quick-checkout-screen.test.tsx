@@ -78,4 +78,25 @@ describe("QuickCheckoutScreen", () => {
       ),
     ).toBeTruthy();
   });
+
+  it("shows purchase preferences and disables assisted checkout", async () => {
+    const screen = await render(<QuickCheckoutScreen />);
+
+    expect(
+      screen.getByRole("radio", { name: "Automatic Purchase Simulation" }),
+    ).toBeTruthy();
+    const assisted = screen.getByRole("radio", { name: "Assisted Checkout" });
+    expect(assisted.props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText("Coming Soon")).toBeTruthy();
+
+    await fireEvent.press(
+      screen.getByRole("radio", { name: "Retailer Checkout" }),
+    );
+    expect(
+      screen.getByText("A valid retailer URL is not available for this cart."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Simulate Checkout" }),
+    ).toBeNull();
+  });
 });

@@ -27,6 +27,21 @@ describe("WatchedItemsScreen", () => {
     ).toBe(false);
   });
 
+  it("navigates to product details when a watched card is selected", async () => {
+    const push = jest.fn();
+    const screen = await render(
+      <WatchedItemsScreen navigation={{ replace: jest.fn(), push }} />,
+    );
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: "View details for Nintendo Switch 2",
+      }),
+    );
+
+    expect(push).toHaveBeenCalledWith("/watched-items/switch-2");
+  });
+
   it("adds an item with a target price and removes it locally", async () => {
     const screen = await render(<WatchedItemsScreen initialItems={[]} />);
 

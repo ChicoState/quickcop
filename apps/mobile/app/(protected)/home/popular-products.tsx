@@ -8,7 +8,10 @@ export default function PopularProductsRoute() {
 
   return (
     <PopularProductsScreen
-      navigation={{ replace: (route) => router.replace(route as never) }}
+      navigation={{
+        push: (route) => router.push(`/(protected)${route}` as never),
+        replace: (route) => router.replace(route as never),
+      }}
       onLogout={async () => {
         await supabase.auth.signOut();
         router.replace("/");

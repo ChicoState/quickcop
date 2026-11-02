@@ -15,6 +15,7 @@ import {
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
 import { ProductCard } from "../products/ProductCard";
+import { addProductToCart } from "../products/ProductCard";
 
 type Category = "All" | "Electronics" | "Cards" | "Collectibles";
 
@@ -155,6 +156,7 @@ export function PopularProductsScreen({
                 name={product.name}
                 price={product.price}
                 store={product.store}
+                onAddToCart={() => addProductToCart(product)}
               />
             ))
           )}

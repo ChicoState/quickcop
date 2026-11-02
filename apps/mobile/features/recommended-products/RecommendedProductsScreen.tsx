@@ -7,7 +7,7 @@ import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
-import { ProductCard } from "../products/ProductCard";
+import { addProductToCart, ProductCard } from "../products/ProductCard";
 
 type RecommendedProduct = {
   id: string;
@@ -95,6 +95,7 @@ export function RecommendedProductsScreen({
                 name={product.name}
                 price={product.price}
                 store={product.store}
+                onAddToCart={() => addProductToCart(product)}
               />
             ))
           )}

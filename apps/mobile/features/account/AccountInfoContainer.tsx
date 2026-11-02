@@ -9,6 +9,7 @@ import {
 import { AccountInfoScreen } from "./AccountInfoScreen";
 import { getPushAvailability } from "./pushAvailability";
 import type { AccountInfo } from "./types";
+import type { AuthenticatedNavigation } from "../navigation/AuthenticatedHeader";
 
 type State =
   | { status: "loading" }
@@ -18,9 +19,13 @@ type State =
 export function AccountInfoContainer({
   onUnauthorized,
   getPushAvailability: resolvePushAvailability = getPushAvailability,
+  navigation,
+  onLogout,
 }: {
   onUnauthorized: () => void;
   getPushAvailability?: () => Promise<AccountInfo["pushAvailability"]>;
+  navigation?: AuthenticatedNavigation;
+  onLogout?: () => void | Promise<void>;
 }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const unauthorizedRef = useRef(onUnauthorized);
@@ -95,5 +100,12 @@ export function AccountInfoContainer({
     );
   }
 
-  return <AccountInfoScreen account={state.account} onSave={handleSave} />;
+  return (
+    <AccountInfoScreen
+      account={state.account}
+      navigation={navigation}
+      onLogout={onLogout}
+      onSave={handleSave}
+    />
+  );
 }

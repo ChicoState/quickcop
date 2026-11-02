@@ -9,6 +9,14 @@ export default function AccountRoute() {
 
   return (
     <AccountInfoContainer
+      navigation={{
+        push: (route) => router.push(`/(protected)${route}` as never),
+        replace: (route) => router.replace(route as never),
+      }}
+      onLogout={async () => {
+        await logout();
+        router.replace("/(public)");
+      }}
       onUnauthorized={() => {
         void logout()
           .then((result) => {

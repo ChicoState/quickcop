@@ -7,6 +7,7 @@ import {
   type NotificationAlert,
 } from "../api/notificationClient";
 import { NotificationsScreen } from "./NotificationsScreen";
+import type { AuthenticatedNavigation } from "../navigation/AuthenticatedHeader";
 
 type State =
   | { status: "loading" }
@@ -15,8 +16,12 @@ type State =
 
 export function NotificationsContainer({
   onManageDeliveryPreferences,
+  navigation,
+  onLogout,
 }: {
   onManageDeliveryPreferences: () => void;
+  navigation?: AuthenticatedNavigation;
+  onLogout?: () => void | Promise<void>;
 }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const mountedRef = useRef(true);
@@ -78,6 +83,8 @@ export function NotificationsContainer({
       alerts={state.alerts}
       onManageDeliveryPreferences={onManageDeliveryPreferences}
       onToggleAlert={toggleAlert}
+      navigation={navigation}
+      onLogout={onLogout}
     />
   );
 }

@@ -10,6 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NotificationAlert } from "../api/notificationClient";
+import {
+  AuthenticatedHeader,
+  type AuthenticatedNavigation,
+} from "../navigation/AuthenticatedHeader";
 
 export type PriceAlert = NotificationAlert;
 
@@ -17,12 +21,16 @@ type NotificationsScreenProps = {
   alerts: PriceAlert[];
   onManageDeliveryPreferences: () => void;
   onToggleAlert: (id: string, enabled: boolean) => Promise<void>;
+  navigation?: AuthenticatedNavigation;
+  onLogout?: () => void | Promise<void>;
 };
 
 export function NotificationsScreen({
   alerts,
   onManageDeliveryPreferences,
   onToggleAlert,
+  navigation,
+  onLogout,
 }: NotificationsScreenProps) {
   const [priceAlerts, setPriceAlerts] = useState(alerts);
   const [toggleError, setToggleError] = useState("");
@@ -54,6 +62,7 @@ export function NotificationsScreen({
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
+        <AuthenticatedHeader navigation={navigation} onLogout={onLogout} />
         <Text accessibilityRole="header" style={styles.title}>
           Price alerts
         </Text>

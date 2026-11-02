@@ -21,10 +21,16 @@ import type {
   NotificationPreferences,
 } from "./types";
 import { accountStyles } from "./styles";
+import {
+  AuthenticatedHeader,
+  type AuthenticatedNavigation,
+} from "../navigation/AuthenticatedHeader";
 
 type AccountInfoScreenProps = {
   account: AccountInfo;
   onSave: (account: AccountInfo) => Promise<void>;
+  navigation?: AuthenticatedNavigation;
+  onLogout?: () => void | Promise<void>;
 };
 
 const alertRows: Array<{ key: AlertType; label: string }> = [
@@ -42,7 +48,12 @@ function preferenceLabel(alertType: AlertType, channel: DeliveryChannel) {
   return `${alertLabel} ${channelLabel} alerts`;
 }
 
-export function AccountInfoScreen({ account, onSave }: AccountInfoScreenProps) {
+export function AccountInfoScreen({
+  account,
+  navigation,
+  onLogout,
+  onSave,
+}: AccountInfoScreenProps) {
   const [email, setEmail] = useState(account.email);
   const [phone, setPhone] = useState(account.phone ?? "");
   const [preferences, setPreferences] = useState<NotificationPreferences>(() =>
@@ -123,6 +134,7 @@ export function AccountInfoScreen({ account, onSave }: AccountInfoScreenProps) {
           contentContainerStyle={accountStyles.content}
           keyboardShouldPersistTaps="handled"
         >
+          <AuthenticatedHeader navigation={navigation} onLogout={onLogout} />
           <Text accessibilityRole="header" style={accountStyles.title}>
             Account info
           </Text>

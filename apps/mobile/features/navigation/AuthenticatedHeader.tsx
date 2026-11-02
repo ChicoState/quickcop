@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { getCartItemCount, subscribeToCart } from "../cart/cartStore";
+
 export type AuthenticatedNavigation = {
   replace: (route: string) => void;
+  push?: (route: string) => void;
 };
 
 type AuthenticatedHeaderProps = {
@@ -15,6 +18,7 @@ type AuthenticatedHeaderProps = {
 const menuItems = [
   { label: "Home", route: "/home" },
   { label: "Watched Items", route: "/watched-items" },
+  { label: "Track from Screenshot", route: "/track-from-screenshot" },
   { label: "Recommended", route: "/recommended" },
   { label: "Popular", route: "/home/popular-products" },
   { label: "Notifications", route: "/notifications" },
@@ -30,6 +34,9 @@ export function AuthenticatedHeader({
   onNavigate,
 }: AuthenticatedHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(getCartItemCount());
+
+  useEffect(() => subscribeToCart(() => setCartCount(getCartItemCount())), []);
 
   function navigate(route: string) {
     setMenuOpen(false);
@@ -62,6 +69,21 @@ export function AuthenticatedHeader({
           </Pressable>
           <Text style={styles.logo}>QuickCop</Text>
         </View>
+        <Pressable
+          accessibilityLabel={`Shopping cart${cartCount ? `, ${cartCount} items` : ""}`}
+          accessibilityRole="button"
+          onPress={() =>
+            navigation?.push?.("/cart") ?? navigation?.replace("/cart")
+          }
+          style={styles.cartButton}
+        >
+          <Text style={styles.cartIcon}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount}</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
 
       {menuOpen && (
@@ -112,6 +134,31 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", flexDirection: "row" },
   brandGroup: { alignItems: "center", flexDirection: "row" },
   logo: { color: "#fff", fontSize: 24, fontWeight: "700" },
+  cartButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    marginLeft: "auto",
+    position: "relative",
+    width: 44,
+  },
+  cartIcon: { fontSize: 22 },
+  badge: {
+    backgroundColor: "#79DCA0",
+    borderRadius: 10,
+    minWidth: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    position: "absolute",
+    right: -2,
+    top: 0,
+  },
+  badgeText: {
+    color: "#092313",
+    fontSize: 11,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   iconButton: {
     alignItems: "center",
     height: 44,

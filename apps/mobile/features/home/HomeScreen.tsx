@@ -6,6 +6,7 @@ import {
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
 import { ProductCard } from "../products/ProductCard";
+import { addProductToCart } from "../products/ProductCard";
 
 type HomeScreenProps = {
   navigation?: AuthenticatedNavigation;
@@ -70,6 +71,14 @@ export function HomeScreen({
               name="Product Name"
               price="$24.99"
               store="Amazon"
+              onAddToCart={() =>
+                addProductToCart({
+                  id: "home-recommended-1",
+                  name: "Product Name",
+                  store: "Amazon",
+                  price: "$24.99",
+                })
+              }
             />
 
             <ProductCard
@@ -77,6 +86,14 @@ export function HomeScreen({
               name="Product Name"
               price="$39.99"
               store="Target"
+              onAddToCart={() =>
+                addProductToCart({
+                  id: "home-recommended-2",
+                  name: "Product Name",
+                  store: "Target",
+                  price: "$39.99",
+                })
+              }
             />
           </View>
         </View>
@@ -100,6 +117,14 @@ export function HomeScreen({
               name="Product Name"
               price="$19.99"
               store="Walmart"
+              onAddToCart={() =>
+                addProductToCart({
+                  id: "home-popular-1",
+                  name: "Product Name",
+                  store: "Walmart",
+                  price: "$19.99",
+                })
+              }
             />
 
             <ProductCard
@@ -107,6 +132,14 @@ export function HomeScreen({
               name="Product Name"
               price="$49.99"
               store="Amazon"
+              onAddToCart={() =>
+                addProductToCart({
+                  id: "home-popular-2",
+                  name: "Product Name",
+                  store: "Amazon",
+                  price: "$49.99",
+                })
+              }
             />
           </View>
         </View>

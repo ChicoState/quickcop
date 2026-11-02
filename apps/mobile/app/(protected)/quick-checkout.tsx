@@ -9,7 +9,10 @@ export default function QuickCheckoutRoute() {
 
   return (
     <QuickCheckoutScreen
-      navigation={{ replace: (route) => router.replace(route as never) }}
+      navigation={{
+        push: (route) => router.push(`/(protected)${route}` as never),
+        replace: (route) => router.replace(route as never),
+      }}
       onLogout={async () => {
         let result = { ok: false };
         try {
