@@ -9,6 +9,7 @@ export default function HomeRoute() {
 
   return (
     <HomeScreen
+      navigation={{ replace: (route) => router.replace(route as never) }}
       onAccountInfo={() => router.push("/(protected)/account")}
       onLogout={async () => {
         let result = { ok: false };
@@ -23,6 +24,10 @@ export default function HomeRoute() {
         });
       }}
       onOpenNotifications={() => router.push("/(protected)/notifications")}
+      onOpenWatchedItems={() => router.push("/(protected)/watched-items")}
+      onOpenPopularProducts={() =>
+        router.push("/(protected)/home/popular-products")
+      }
     />
   );
 }

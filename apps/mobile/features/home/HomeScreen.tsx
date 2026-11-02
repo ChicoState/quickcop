@@ -1,121 +1,44 @@
-import { useState } from "react";
-
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  AuthenticatedHeader,
+  type AuthenticatedNavigation,
+} from "../navigation/AuthenticatedHeader";
+import { ProductCard } from "../products/ProductCard";
+
 type HomeScreenProps = {
+  navigation?: AuthenticatedNavigation;
   onAccountInfo?: () => void;
   onLogout: () => void | Promise<void>;
   onOpenNotifications: () => void;
   onOpenWatchedItems?: () => void;
+  onOpenPopularProducts?: () => void;
 };
 
 export function HomeScreen({
+  navigation,
   onAccountInfo,
   onLogout,
   onOpenNotifications,
   onOpenWatchedItems = () => undefined,
+  onOpenPopularProducts = () => undefined,
 }: HomeScreenProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [storesOpen, setStoresOpen] = useState(false);
-
-  async function handleLogout() {
-    await onLogout();
-  }
-
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            accessibilityLabel="Open menu"
-            accessibilityRole="button"
-            style={styles.iconButton}
-            onPress={() => setMenuOpen(!menuOpen)}
-          >
-            <Text style={styles.iconText}>☰</Text>
-          </Pressable>
-
-          <Text style={styles.logo}>QuickCop</Text>
-
-          <Pressable style={styles.iconButton}>
-            <Text style={styles.iconText}>⌕</Text>
-          </Pressable>
-        </View>
-
-        {/* Hamburger Menu */}
-        {menuOpen && (
-          <View style={styles.menu}>
-            <Pressable>
-              <Text style={styles.menuItem}>Home</Text>
-            </Pressable>
-
-            <Pressable accessibilityRole="button" onPress={onOpenWatchedItems}>
-              <Text style={styles.menuItem}>Watched Items</Text>
-            </Pressable>
-
-            <Pressable accessibilityRole="button" onPress={onOpenNotifications}>
-              <Text style={styles.menuItem}>Price alerts</Text>
-            </Pressable>
-
-            {onAccountInfo ? (
-              <Pressable accessibilityRole="button" onPress={onAccountInfo}>
-                <Text style={styles.menuItem}>Account info</Text>
-              </Pressable>
-            ) : null}
-
-            <Pressable>
-              <Text style={styles.menuItem}>Recommended</Text>
-            </Pressable>
-
-            <Pressable>
-              <Text style={styles.menuItem}>Popular</Text>
-            </Pressable>
-
-            {/* Categories */}
-            <Pressable onPress={() => setCategoriesOpen(!categoriesOpen)}>
-              <Text style={styles.menuItem}>
-                Categories {categoriesOpen ? "▲" : "▼"}
-              </Text>
-            </Pressable>
-
-            {categoriesOpen && (
-              <View style={styles.subMenu}>
-                <Text style={styles.subMenuItem}>Tickets</Text>
-                <Text style={styles.subMenuItem}>Cards</Text>
-                <Text style={styles.subMenuItem}>Lego</Text>
-                <Text style={styles.subMenuItem}>See All</Text>
-              </View>
-            )}
-
-            {/* Stores */}
-            <Pressable onPress={() => setStoresOpen(!storesOpen)}>
-              <Text style={styles.menuItem}>
-                Stores {storesOpen ? "▲" : "▼"}
-              </Text>
-            </Pressable>
-
-            {storesOpen && (
-              <View style={styles.subMenu}>
-                <Text style={styles.subMenuItem}>Amazon</Text>
-                <Text style={styles.subMenuItem}>Target</Text>
-                <Text style={styles.subMenuItem}>Walmart</Text>
-                <Text style={styles.subMenuItem}>See All</Text>
-              </View>
-            )}
-
-            {/* Settings */}
-            <Pressable>
-              <Text style={styles.menuItem}>Settings</Text>
-            </Pressable>
-
-            <Pressable accessibilityRole="button" onPress={handleLogout}>
-              <Text style={styles.logoutMenuItem}>Log out</Text>
-            </Pressable>
-          </View>
-        )}
+        <AuthenticatedHeader
+          navigation={navigation}
+          onLogout={onLogout}
+          onNavigate={(route) => {
+            if (route === "/watched-items") onOpenWatchedItems();
+            else if (route === "/home/popular-products")
+              onOpenPopularProducts();
+            else if (route === "/notifications") onOpenNotifications();
+            else if (route === "/account" && onAccountInfo) onAccountInfo();
+            else navigation?.replace(route);
+          }}
+        />
 
         {/* Home */}
         <Text style={styles.title}>Home</Text>
@@ -142,44 +65,53 @@ export function HomeScreen({
           <Text style={styles.sectionTitle}>Recommended</Text>
 
           <View style={styles.productRow}>
-            <ProductCard name="Product Name" store="Amazon" price="$24.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$24.99"
+              store="Amazon"
+            />
 
-            <ProductCard name="Product Name" store="Target" price="$39.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$39.99"
+              store="Target"
+            />
           </View>
         </View>
 
         {/* Popular */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Popular</Text>
+            <Pressable
+              accessibilityLabel="View popular products"
+              accessibilityRole="button"
+              onPress={onOpenPopularProducts}
+            >
+              <Text style={styles.sectionAction}>See all</Text>
+            </Pressable>
+          </View>
 
           <View style={styles.productRow}>
-            <ProductCard name="Product Name" store="Walmart" price="$19.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$19.99"
+              store="Walmart"
+            />
 
-            <ProductCard name="Product Name" store="Amazon" price="$49.99" />
+            <ProductCard
+              layout="grid"
+              name="Product Name"
+              price="$49.99"
+              store="Amazon"
+            />
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-type ProductCardProps = {
-  name: string;
-  store: string;
-  price: string;
-};
-
-function ProductCard({ name, store, price }: ProductCardProps) {
-  return (
-    <View style={styles.productCard}>
-      <View style={styles.productImage}>
-        <Text style={styles.imageText}>IMG</Text>
-      </View>
-
-      <Text style={styles.productName}>{name}</Text>
-      <Text style={styles.productStore}>{store}</Text>
-      <Text style={styles.productPrice}>{price}</Text>
-    </View>
   );
 }
 
@@ -191,64 +123,6 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 20,
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-
-  logo: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-
-  iconButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  iconText: {
-    color: "#fff",
-    fontSize: 26,
-  },
-
-  menu: {
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#333",
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 25,
-  },
-
-  menuItem: {
-    color: "#fff",
-    fontSize: 18,
-    paddingVertical: 10,
-  },
-
-  subMenu: {
-    marginLeft: 20,
-    marginBottom: 6,
-  },
-
-  subMenuItem: {
-    color: "#aaa",
-    fontSize: 16,
-    paddingVertical: 7,
-  },
-
-  logoutMenuItem: {
-    color: "#ff7777",
-    fontSize: 18,
-    paddingVertical: 10,
-    marginTop: 8,
   },
 
   title: {
@@ -266,7 +140,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 21,
     fontWeight: "600",
+  },
+
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 14,
+  },
+
+  sectionAction: {
+    color: "#79DCA0",
+    fontSize: 14,
+    fontWeight: "600",
   },
 
   emptyCard: {
@@ -292,47 +178,5 @@ const styles = StyleSheet.create({
   productRow: {
     flexDirection: "row",
     gap: 14,
-  },
-
-  productCard: {
-    flex: 1,
-    backgroundColor: "#161616",
-    borderWidth: 1,
-    borderColor: "#2b2b2b",
-    borderRadius: 12,
-    padding: 12,
-  },
-
-  productImage: {
-    height: 110,
-    backgroundColor: "#252525",
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-
-  imageText: {
-    color: "#777",
-    fontSize: 14,
-  },
-
-  productName: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-
-  productStore: {
-    color: "#888",
-    fontSize: 13,
-    marginBottom: 6,
-  },
-
-  productPrice: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "700",
   },
 });
