@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { ConfigurationErrorScreen } from "../features/auth/ConfigurationErrorScreen";
 import { AuthProvider, useAuth } from "../features/auth/AuthProvider";
+import { WatchedItemsProvider } from "../features/watched-items/WatchedItemsContext";
 import { supabaseConfigError } from "../lib/supabase";
 
 function RootNavigator() {
@@ -45,8 +46,10 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <StatusBar style="light" />
-      <RootNavigator />
+      <WatchedItemsProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </WatchedItemsProvider>
     </AuthProvider>
   );
 }

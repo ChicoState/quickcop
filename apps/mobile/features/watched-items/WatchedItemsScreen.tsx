@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +20,7 @@ import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
+import { useWatchedItems } from "./WatchedItemsContext";
 
 export type WatchedItem = {
   id: string;
@@ -27,6 +29,7 @@ export type WatchedItem = {
   currentPrice: string;
   targetPrice: string;
   alertEnabled: boolean;
+  imageUrl?: string;
 };
 
 export type { ProductPreview } from "../api/productPreviewClient";
@@ -63,7 +66,17 @@ export function WatchedItemsScreen({
   navigation,
   onLogout,
 }: WatchedItemsScreenProps) {
-  const [items, setItems] = useState(initialItems);
+  const sharedItems = useWatchedItems();
+  const [localItems, setLocalItems] = useState(
+    initialItems ?? placeholderItems,
+  );
+  const items = sharedItems?.items ?? localItems;
+  const updateItems = (
+    updater: (currentItems: WatchedItem[]) => WatchedItem[],
+  ) => {
+    if (sharedItems) sharedItems.setItems(updater);
+    else setLocalItems(updater);
+  };
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [productUrl, setProductUrl] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
@@ -82,7 +95,9 @@ export function WatchedItemsScreen({
       setPreview(await previewProduct(url));
     } catch (error) {
       setPreviewError(
-        error instanceof Error ? error.message : "We could not preview this product.",
+        error instanceof Error
+          ? error.message
+          : "We could not preview this product.",
       );
     } finally {
       setIsPreviewing(false);
@@ -92,7 +107,7 @@ export function WatchedItemsScreen({
   function addItem() {
     if (!preview || !targetPrice.trim()) return;
 
-    setItems((currentItems) => [
+    updateItems((currentItems) => [
       ...currentItems,
       {
         id: `${preview.sourceUrl}-${Date.now()}`,
@@ -101,6 +116,7 @@ export function WatchedItemsScreen({
         currentPrice: formatCurrency(preview.priceCents, preview.currency),
         targetPrice: formatPrice(targetPrice.trim()),
         alertEnabled: true,
+        imageUrl: preview.images[0],
       },
     ]);
     setProductUrl("");
@@ -119,11 +135,13 @@ export function WatchedItemsScreen({
   }
 
   function removeItem(id: string) {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id));
+    updateItems((currentItems) =>
+      currentItems.filter((item) => item.id !== id),
+    );
   }
 
   function setAlertEnabled(id: string, alertEnabled: boolean) {
-    setItems((currentItems) =>
+    updateItems((currentItems) =>
       currentItems.map((item) =>
         item.id === id ? { ...item, alertEnabled } : item,
       ),
@@ -183,12 +201,15 @@ export function WatchedItemsScreen({
                 {isPreviewing ? "Previewing…" : "Preview product"}
               </Text>
             </Pressable>
-            {previewError && <Text style={styles.errorText}>{previewError}</Text>}
+            {previewError && (
+              <Text style={styles.errorText}>{previewError}</Text>
+            )}
             {preview && (
               <View style={styles.previewCard}>
                 <Text style={styles.previewName}>{preview.name}</Text>
                 <Text style={styles.previewPrice}>
-                  Current price: {formatCurrency(preview.priceCents, preview.currency)}
+                  Current price:{" "}
+                  {formatCurrency(preview.priceCents, preview.currency)}
                 </Text>
               </View>
             )}
@@ -234,6 +255,13 @@ export function WatchedItemsScreen({
             {items.map((item) => (
               <View key={item.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
+                  {item.imageUrl ? (
+                    <Image
+                      accessibilityLabel={`${item.name} product image`}
+                      source={{ uri: item.imageUrl }}
+                      style={styles.itemImage}
+                    />
+                  ) : null}
                   <View style={styles.itemContent}>
                     <Text style={styles.productName}>{item.name}</Text>
                     <Text style={styles.store}>{item.store}</Text>
@@ -374,6 +402,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   itemHeader: { alignItems: "center", flexDirection: "row" },
+  itemImage: { borderRadius: 8, height: 64, marginRight: 12, width: 64 },
   itemContent: { flex: 1, paddingRight: 12 },
   productName: {
     color: "#fff",

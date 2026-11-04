@@ -6,6 +6,7 @@ import {
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
 import { ProductCard } from "../products/ProductCard";
+import { useWatchedItems } from "../watched-items/WatchedItemsContext";
 
 type HomeScreenProps = {
   navigation?: AuthenticatedNavigation;
@@ -24,6 +25,8 @@ export function HomeScreen({
   onOpenWatchedItems = () => undefined,
   onOpenPopularProducts = () => undefined,
 }: HomeScreenProps) {
+  const watchedItems = useWatchedItems()?.items ?? [];
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -47,17 +50,40 @@ export function HomeScreen({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Watched Items</Text>
 
-          <Pressable
-            accessibilityLabel="View watched items"
-            accessibilityRole="button"
-            onPress={onOpenWatchedItems}
-            style={styles.emptyCard}
-          >
-            <Text style={styles.emptyText}>
-              You are not watching any items yet.
-            </Text>
-            <Text style={styles.emptyAction}>Add or manage watched items</Text>
-          </Pressable>
+          {watchedItems.length === 0 ? (
+            <Pressable
+              accessibilityLabel="View watched items"
+              accessibilityRole="button"
+              onPress={onOpenWatchedItems}
+              style={styles.emptyCard}
+            >
+              <Text style={styles.emptyText}>
+                You are not watching any items yet.
+              </Text>
+              <Text style={styles.emptyAction}>
+                Add or manage watched items
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.watchedItems}>
+              {watchedItems.slice(0, 2).map((item) => (
+                <ProductCard
+                  key={item.id}
+                  name={item.name}
+                  imageUrl={item.imageUrl}
+                  price={item.currentPrice}
+                  store={item.store}
+                />
+              ))}
+              <Pressable
+                accessibilityLabel="View watched items"
+                accessibilityRole="button"
+                onPress={onOpenWatchedItems}
+              >
+                <Text style={styles.sectionAction}>View all watched items</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Recommended */}
@@ -178,5 +204,10 @@ const styles = StyleSheet.create({
   productRow: {
     flexDirection: "row",
     gap: 14,
+  },
+
+  watchedItems: {
+    gap: 12,
+    marginTop: 14,
   },
 });

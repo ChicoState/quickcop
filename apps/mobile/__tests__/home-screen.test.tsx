@@ -3,8 +3,17 @@ jest.mock("../lib/supabase", () => ({
 }));
 
 jest.mock("../features/products/ProductCard", () => ({
-  ProductCard: ({ name }: { name: string }) => {
-    return <MockText testID="shared-product-card">{name}</MockText>;
+  ProductCard: ({ name, imageUrl }: { name: string; imageUrl?: string }) => {
+    return (
+      <>
+        <MockText testID="shared-product-card">{name}</MockText>
+        {imageUrl && (
+          <MockText accessibilityLabel={`${name} product image`}>
+            image
+          </MockText>
+        )}
+      </>
+    );
   },
 }));
 
@@ -12,6 +21,8 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { Text as MockText } from "react-native";
 
 import { HomeScreen } from "../features/home/HomeScreen";
+import { WatchedItemsProvider } from "../features/watched-items/WatchedItemsContext";
+import type { WatchedItem } from "../features/watched-items/WatchedItemsScreen";
 
 describe("HomeScreen", () => {
   it("renders homepage products with the shared ProductCard", async () => {
@@ -55,5 +66,27 @@ describe("HomeScreen", () => {
     );
 
     expect(onOpenWatchedItems).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders shared watched items and their scraper image on the homepage", async () => {
+    const watchedItem: WatchedItem = {
+      id: "lego",
+      name: "LEGO Star Wars Set",
+      store: "Amazon",
+      currentPrice: "$69.99",
+      targetPrice: "$59.99",
+      alertEnabled: true,
+      imageUrl: "https://cdn.example.com/lego-star-wars.jpg",
+    };
+    const screen = await render(
+      <WatchedItemsProvider initialItems={[watchedItem]}>
+        <HomeScreen onLogout={jest.fn()} onOpenNotifications={jest.fn()} />
+      </WatchedItemsProvider>,
+    );
+
+    expect(screen.getByText("LEGO Star Wars Set")).toBeTruthy();
+    expect(
+      screen.getByLabelText("LEGO Star Wars Set product image"),
+    ).toBeTruthy();
   });
 });

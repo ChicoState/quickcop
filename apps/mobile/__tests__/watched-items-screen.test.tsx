@@ -29,13 +29,15 @@ describe("WatchedItemsScreen", () => {
   });
 
   it("previews a URL and adds the returned product with a target price", async () => {
-    const previewProduct = jest.fn<Promise<ProductPreview>, [string]>().mockResolvedValue({
-      name: "LEGO Star Wars Set",
-      priceCents: 6999,
-      currency: "USD",
-      sourceUrl: "https://www.amazon.com/dp/lego-star-wars",
-      images: [],
-    });
+    const previewProduct = jest
+      .fn<Promise<ProductPreview>, [string]>()
+      .mockResolvedValue({
+        name: "LEGO Star Wars Set",
+        priceCents: 6999,
+        currency: "USD",
+        sourceUrl: "https://www.amazon.com/dp/lego-star-wars",
+        images: ["https://cdn.example.com/lego-star-wars.jpg"],
+      });
     const screen = await render(
       <WatchedItemsScreen initialItems={[]} previewProduct={previewProduct} />,
     );
@@ -60,6 +62,9 @@ describe("WatchedItemsScreen", () => {
     expect(screen.getByText("Amazon")).toBeTruthy();
     expect(screen.getByText("Current price: $69.99")).toBeTruthy();
     expect(screen.getByText("Target price: $59.99")).toBeTruthy();
+    expect(
+      screen.getByLabelText("LEGO Star Wars Set product image"),
+    ).toBeTruthy();
 
     await fireEvent.press(
       screen.getByRole("button", { name: "Unwatch LEGO Star Wars Set" }),
@@ -97,7 +102,9 @@ describe("WatchedItemsScreen", () => {
 
     expect(screen.getByText("No watched items yet")).toBeTruthy();
     expect(
-      screen.getByText("Add a product URL to start tracking its price locally."),
+      screen.getByText(
+        "Add a product URL to start tracking its price locally.",
+      ),
     ).toBeTruthy();
   });
 });

@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 type ProductCardProps = {
   layout?: "row" | "grid";
   name: string;
   store: string;
   price: string;
+  imageUrl?: string;
 };
 
 export function ProductCard({
@@ -12,16 +13,31 @@ export function ProductCard({
   name,
   store,
   price,
+  imageUrl,
 }: ProductCardProps) {
   const isGrid = layout === "grid";
 
   return (
     <View style={[styles.productCard, isGrid && styles.gridProductCard]}>
-      <View
-        style={[styles.imagePlaceholder, isGrid && styles.gridImagePlaceholder]}
-      >
-        <Text style={styles.imagePlaceholderText}>IMG</Text>
-      </View>
+      {imageUrl ? (
+        <Image
+          accessibilityLabel={`${name} product image`}
+          source={{ uri: imageUrl }}
+          style={[
+            styles.imagePlaceholder,
+            isGrid && styles.gridImagePlaceholder,
+          ]}
+        />
+      ) : (
+        <View
+          style={[
+            styles.imagePlaceholder,
+            isGrid && styles.gridImagePlaceholder,
+          ]}
+        >
+          <Text style={styles.imagePlaceholderText}>IMG</Text>
+        </View>
+      )}
       <View
         style={[styles.productDetails, isGrid && styles.gridProductDetails]}
       >
