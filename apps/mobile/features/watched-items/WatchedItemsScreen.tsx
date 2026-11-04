@@ -12,6 +12,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
+  requestProductPreview,
+  type ProductPreview,
+} from "../api/productPreviewClient";
+import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
@@ -24,6 +28,8 @@ export type WatchedItem = {
   targetPrice: string;
   alertEnabled: boolean;
 };
+
+export type { ProductPreview } from "../api/productPreviewClient";
 
 const placeholderItems: WatchedItem[] = [
   {
@@ -46,52 +52,70 @@ const placeholderItems: WatchedItem[] = [
 
 type WatchedItemsScreenProps = {
   initialItems?: WatchedItem[];
+  previewProduct?: (url: string) => Promise<ProductPreview>;
   navigation?: AuthenticatedNavigation;
   onLogout?: () => void | Promise<void>;
 };
 
 export function WatchedItemsScreen({
   initialItems = placeholderItems,
+  previewProduct = requestProductPreview,
   navigation,
   onLogout,
 }: WatchedItemsScreenProps) {
   const [items, setItems] = useState(initialItems);
   const [isAddingItem, setIsAddingItem] = useState(false);
-  const [name, setName] = useState("");
-  const [store, setStore] = useState("");
-  const [currentPrice, setCurrentPrice] = useState("");
+  const [productUrl, setProductUrl] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
+  const [preview, setPreview] = useState<ProductPreview | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
-  function formatPrice(value: string) {
-    return value.startsWith("$") ? value : `$${value}`;
+  async function previewItem() {
+    const url = productUrl.trim();
+    if (!url) return;
+
+    setIsPreviewing(true);
+    setPreviewError(null);
+    setPreview(null);
+    try {
+      setPreview(await previewProduct(url));
+    } catch (error) {
+      setPreviewError(
+        error instanceof Error ? error.message : "We could not preview this product.",
+      );
+    } finally {
+      setIsPreviewing(false);
+    }
   }
 
   function addItem() {
-    if (
-      !name.trim() ||
-      !store.trim() ||
-      !currentPrice.trim() ||
-      !targetPrice.trim()
-    ) {
-      return;
-    }
+    if (!preview || !targetPrice.trim()) return;
 
     setItems((currentItems) => [
       ...currentItems,
       {
-        id: `${name.trim()}-${Date.now()}`,
-        name: name.trim(),
-        store: store.trim(),
-        currentPrice: formatPrice(currentPrice.trim()),
+        id: `${preview.sourceUrl}-${Date.now()}`,
+        name: preview.name,
+        store: storeName(preview.sourceUrl),
+        currentPrice: formatCurrency(preview.priceCents, preview.currency),
         targetPrice: formatPrice(targetPrice.trim()),
         alertEnabled: true,
       },
     ]);
-    setName("");
-    setStore("");
-    setCurrentPrice("");
+    setProductUrl("");
     setTargetPrice("");
+    setPreview(null);
+    setPreviewError(null);
     setIsAddingItem(false);
+  }
+
+  function closeForm() {
+    setIsAddingItem(false);
+    setProductUrl("");
+    setTargetPrice("");
+    setPreview(null);
+    setPreviewError(null);
   }
 
   function removeItem(id: string) {
@@ -116,8 +140,8 @@ export function WatchedItemsScreen({
               Watched Items
             </Text>
             <Text style={styles.subtitle}>
-              Track the prices you care about. Changes stay on this device for
-              now.
+              Paste a product link to automatically add its name and current
+              price.
             </Text>
           </View>
           <Pressable
@@ -136,31 +160,38 @@ export function WatchedItemsScreen({
               Watch an item
             </Text>
             <TextInput
-              accessibilityLabel="Product name"
-              onChangeText={setName}
-              placeholder="Product name"
+              accessibilityLabel="Product URL"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={(value) => {
+                setProductUrl(value);
+                setPreview(null);
+                setPreviewError(null);
+              }}
+              placeholder="Product URL (https://...)"
               placeholderTextColor="#888"
               style={styles.input}
-              value={name}
+              value={productUrl}
             />
-            <TextInput
-              accessibilityLabel="Store"
-              onChangeText={setStore}
-              placeholder="Store"
-              placeholderTextColor="#888"
-              style={styles.input}
-              value={store}
-            />
-            <TextInput
-              accessibilityLabel="Current price"
-              inputMode="decimal"
-              keyboardType="decimal-pad"
-              onChangeText={setCurrentPrice}
-              placeholder="Current price"
-              placeholderTextColor="#888"
-              style={styles.input}
-              value={currentPrice}
-            />
+            <Pressable
+              accessibilityRole="button"
+              disabled={isPreviewing || !productUrl.trim()}
+              onPress={previewItem}
+              style={styles.previewButton}
+            >
+              <Text style={styles.previewButtonText}>
+                {isPreviewing ? "Previewing…" : "Preview product"}
+              </Text>
+            </Pressable>
+            {previewError && <Text style={styles.errorText}>{previewError}</Text>}
+            {preview && (
+              <View style={styles.previewCard}>
+                <Text style={styles.previewName}>{preview.name}</Text>
+                <Text style={styles.previewPrice}>
+                  Current price: {formatCurrency(preview.priceCents, preview.currency)}
+                </Text>
+              </View>
+            )}
             <TextInput
               accessibilityLabel="Target price"
               inputMode="decimal"
@@ -174,13 +205,14 @@ export function WatchedItemsScreen({
             <View style={styles.formActions}>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setIsAddingItem(false)}
+                onPress={closeForm}
                 style={styles.cancelButton}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
+                disabled={!preview || !targetPrice.trim()}
                 onPress={addItem}
                 style={styles.watchButton}
               >
@@ -194,7 +226,7 @@ export function WatchedItemsScreen({
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No watched items yet</Text>
             <Text style={styles.emptyText}>
-              Add an item to start tracking its price locally.
+              Add a product URL to start tracking its price locally.
             </Text>
           </View>
         ) : (
@@ -241,6 +273,31 @@ export function WatchedItemsScreen({
   );
 }
 
+function formatPrice(value: string) {
+  return value.startsWith("$") ? value : `$${value}`;
+}
+
+function formatCurrency(priceCents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+    }).format(priceCents / 100);
+  } catch {
+    return `${currency} ${(priceCents / 100).toFixed(2)}`;
+  }
+}
+
+function storeName(sourceUrl: string) {
+  try {
+    const hostname = new URL(sourceUrl).hostname.replace(/^www\./, "");
+    const name = hostname.split(".")[0] ?? "Store";
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  } catch {
+    return "Store";
+  }
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#000" },
   content: { padding: 20, paddingBottom: 40 },
@@ -280,6 +337,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
   },
+  previewButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#2b2b2b",
+    borderRadius: 8,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  previewButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  errorText: { color: "#ff9999", fontSize: 14, marginBottom: 12 },
+  previewCard: {
+    backgroundColor: "#202020",
+    borderRadius: 8,
+    marginBottom: 12,
+    padding: 12,
+  },
+  previewName: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  previewPrice: { color: "#aaa", fontSize: 14, marginTop: 4 },
   formActions: { flexDirection: "row", gap: 12, justifyContent: "flex-end" },
   cancelButton: { paddingHorizontal: 14, paddingVertical: 12 },
   cancelButtonText: { color: "#aaa", fontSize: 15, fontWeight: "600" },

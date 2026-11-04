@@ -9,6 +9,15 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["types/**/*.d.ts", "tests/**/*.ts", "scripts/**/*.ts"],
-  "exclude": ["node_modules", "coverage", "dist"]
+  "include": [
+    "types/**/*.d.ts",
+    "tests/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "coverage",
+    "dist"
+  ],
+  "extends": "expo/tsconfig.base"
 }

@@ -2,6 +2,7 @@ import { fireEvent, render } from "@testing-library/react-native";
 
 import {
   WatchedItemsScreen,
+  type ProductPreview,
   type WatchedItem,
 } from "../features/watched-items/WatchedItemsScreen";
 
@@ -27,22 +28,37 @@ describe("WatchedItemsScreen", () => {
     ).toBe(false);
   });
 
-  it("adds an item with a target price and removes it locally", async () => {
-    const screen = await render(<WatchedItemsScreen initialItems={[]} />);
+  it("previews a URL and adds the returned product with a target price", async () => {
+    const previewProduct = jest.fn<Promise<ProductPreview>, [string]>().mockResolvedValue({
+      name: "LEGO Star Wars Set",
+      priceCents: 6999,
+      currency: "USD",
+      sourceUrl: "https://www.amazon.com/dp/lego-star-wars",
+      images: [],
+    });
+    const screen = await render(
+      <WatchedItemsScreen initialItems={[]} previewProduct={previewProduct} />,
+    );
 
     expect(screen.getByText("No watched items yet")).toBeTruthy();
 
     await fireEvent.press(screen.getByRole("button", { name: "Add item" }));
     await fireEvent.changeText(
-      screen.getByLabelText("Product name"),
-      "LEGO Star Wars Set",
+      screen.getByLabelText("Product URL"),
+      "https://www.amazon.com/dp/lego-star-wars",
     );
-    await fireEvent.changeText(screen.getByLabelText("Store"), "Amazon");
-    await fireEvent.changeText(screen.getByLabelText("Current price"), "69.99");
     await fireEvent.changeText(screen.getByLabelText("Target price"), "59.99");
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Preview product" }),
+    );
+    expect(previewProduct).toHaveBeenCalledWith(
+      "https://www.amazon.com/dp/lego-star-wars",
+    );
     await fireEvent.press(screen.getByRole("button", { name: "Watch item" }));
 
     expect(screen.getByText("LEGO Star Wars Set")).toBeTruthy();
+    expect(screen.getByText("Amazon")).toBeTruthy();
+    expect(screen.getByText("Current price: $69.99")).toBeTruthy();
     expect(screen.getByText("Target price: $59.99")).toBeTruthy();
 
     await fireEvent.press(
@@ -52,13 +68,36 @@ describe("WatchedItemsScreen", () => {
     expect(screen.getByText("No watched items yet")).toBeTruthy();
   });
 
+  it("shows a preview error without adding an item", async () => {
+    const previewProduct = jest
+      .fn<Promise<ProductPreview>, [string]>()
+      .mockRejectedValue(new Error("Product name or price was not found."));
+    const screen = await render(
+      <WatchedItemsScreen initialItems={[]} previewProduct={previewProduct} />,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add item" }));
+    await fireEvent.changeText(
+      screen.getByLabelText("Product URL"),
+      "https://store.example/missing",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Preview product" }),
+    );
+
+    expect(
+      screen.getByText("Product name or price was not found."),
+    ).toBeTruthy();
+    expect(screen.getByText("No watched items yet")).toBeTruthy();
+  });
+
   it("shows an empty state when no watched items are available", async () => {
     const items: WatchedItem[] = [];
     const screen = await render(<WatchedItemsScreen initialItems={items} />);
 
     expect(screen.getByText("No watched items yet")).toBeTruthy();
     expect(
-      screen.getByText("Add an item to start tracking its price locally."),
+      screen.getByText("Add a product URL to start tracking its price locally."),
     ).toBeTruthy();
   });
 });
