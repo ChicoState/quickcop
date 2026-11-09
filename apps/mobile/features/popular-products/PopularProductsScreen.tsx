@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
-  Pressable,
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,54 +10,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { loadProducts, type Product } from "../api/productsClient";
 import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
 import { ProductCard } from "../products/ProductCard";
 
-type Category = "All" | "Electronics" | "Cards" | "Collectibles";
-
-type PopularProduct = {
-  id: string;
-  name: string;
-  store: string;
-  price: string;
-  category: Exclude<Category, "All">;
-};
-
-const categories: Category[] = ["All", "Electronics", "Cards", "Collectibles"];
-
-const products: PopularProduct[] = [
-  {
-    id: "switch-2",
-    name: "Nintendo Switch 2",
-    store: "Target",
-    price: "$449.99",
-    category: "Electronics",
-  },
-  {
-    id: "headphones",
-    name: "Sony WH-1000XM6",
-    store: "Amazon",
-    price: "$398.00",
-    category: "Electronics",
-  },
-  {
-    id: "pokemon-etb",
-    name: "Pokémon TCG: Prismatic Evolutions ETB",
-    store: "Walmart",
-    price: "$54.97",
-    category: "Cards",
-  },
-  {
-    id: "lego-f1",
-    name: "LEGO Technic Ferrari SF-24 F1 Car",
-    store: "LEGO",
-    price: "$229.99",
-    category: "Collectibles",
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const POKEMON_POSTER_IMAGE = require("../../assets/images/pokemon-30th-poster.webp");
 
 type PopularProductsScreenProps = {
   navigation?: AuthenticatedNavigation;
@@ -69,22 +30,43 @@ export function PopularProductsScreen({
   onLogout,
 }: PopularProductsScreenProps) {
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<Category>("All");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchProducts() {
+      setLoading(true);
+      const result = await loadProducts();
+      if (cancelled) return;
+
+      if (result.ok) {
+        setProducts(result.data);
+        setError(null);
+      } else {
+        setError("Unable to load products right now.");
+      }
+      setLoading(false);
+    }
+
+    fetchProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredProducts = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
+    if (!searchTerm) return products;
 
-    return products.filter((product) => {
-      const inCategory =
-        selectedCategory === "All" || product.category === selectedCategory;
-      const matchesSearch =
-        !searchTerm ||
+    return products.filter(
+      (product) =>
         product.name.toLowerCase().includes(searchTerm) ||
-        product.store.toLowerCase().includes(searchTerm);
-
-      return inCategory && matchesSearch;
-    });
-  }, [search, selectedCategory]);
+        product.store.toLowerCase().includes(searchTerm),
+    );
+  }, [search, products]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -94,7 +76,7 @@ export function PopularProductsScreen({
           Popular Products
         </Text>
         <Text style={styles.subtitle}>
-          Browse placeholder deals from stores shoppers watch most.
+          Live stock status from tracked stores.
         </Text>
 
         <TextInput
@@ -108,50 +90,28 @@ export function PopularProductsScreen({
           value={search}
         />
 
-        <ScrollView
-          contentContainerStyle={styles.categoryList}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-        >
-          {categories.map((category) => {
-            const selected = category === selectedCategory;
-
-            return (
-              <Pressable
-                key={category}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                onPress={() => setSelectedCategory(category)}
-                style={[
-                  styles.categoryButton,
-                  selected && styles.categoryButtonSelected,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.categoryButtonText,
-                    selected && styles.categoryButtonTextSelected,
-                  ]}
-                >
-                  {category}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
         <View style={styles.productList}>
-          {filteredProducts.length === 0 ? (
+          {loading ? (
+            <ActivityIndicator
+              color="#79DCA0"
+              style={styles.loadingIndicator}
+            />
+          ) : error ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>Something went wrong</Text>
+              <Text style={styles.emptyText}>{error}</Text>
+            </View>
+          ) : filteredProducts.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No products found</Text>
-              <Text style={styles.emptyText}>
-                Try another search or category.
-              </Text>
+              <Text style={styles.emptyText}>Try another search.</Text>
             </View>
           ) : (
             filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
+                available={product.available}
+                localImage={POKEMON_POSTER_IMAGE}
                 name={product.name}
                 price={product.price}
                 store={product.store}
@@ -180,21 +140,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
   },
-  categoryList: { gap: 10, paddingVertical: 18 },
-  categoryButton: {
-    borderColor: "#454545",
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  categoryButtonSelected: {
-    backgroundColor: "#79DCA0",
-    borderColor: "#79DCA0",
-  },
-  categoryButtonText: { color: "#ddd", fontSize: 14, fontWeight: "600" },
-  categoryButtonTextSelected: { color: "#092313" },
-  productList: { gap: 12 },
+  productList: { gap: 12, marginTop: 20 },
+  loadingIndicator: { marginTop: 24 },
   emptyCard: {
     alignItems: "center",
     backgroundColor: "#161616",

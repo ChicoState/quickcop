@@ -10,7 +10,7 @@ export default function PopularProductsRoute() {
     <PopularProductsScreen
       navigation={{ replace: (route) => router.replace(route as never) }}
       onLogout={async () => {
-        await supabase.auth.signOut();
+        if (supabase) await supabase.auth.signOut();
         router.replace("/");
       }}
     />
