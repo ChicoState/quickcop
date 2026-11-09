@@ -5,6 +5,7 @@ type ProductCardProps = {
   name: string;
   store: string;
   price: string;
+  targetPrice?: string;
   imageUrl?: string;
 };
 
@@ -13,6 +14,7 @@ export function ProductCard({
   name,
   store,
   price,
+  targetPrice,
   imageUrl,
 }: ProductCardProps) {
   const isGrid = layout === "grid";
@@ -45,7 +47,20 @@ export function ProductCard({
           {name}
         </Text>
         <Text style={[styles.store, isGrid && styles.gridStore]}>{store}</Text>
-        <Text style={[styles.price, isGrid && styles.gridPrice]}>{price}</Text>
+        <View style={[styles.priceSummary, isGrid && styles.gridPriceSummary]}>
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>Current price</Text>
+            <Text style={[styles.price, isGrid && styles.gridPrice]}>
+              {price}
+            </Text>
+          </View>
+          {targetPrice ? (
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Your target</Text>
+              <Text style={styles.targetPrice}>{targetPrice}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -92,6 +107,15 @@ const styles = StyleSheet.create({
   gridProductName: { marginBottom: 4 },
   store: { color: "#aaa", fontSize: 14, marginTop: 4 },
   gridStore: { color: "#888", fontSize: 13, marginBottom: 6, marginTop: 0 },
-  price: { color: "#79DCA0", fontSize: 17, fontWeight: "700", marginTop: 7 },
-  gridPrice: { color: "#fff", marginTop: 0 },
+  priceSummary: { gap: 6, marginTop: 10 },
+  gridPriceSummary: { gap: 4, marginTop: 8 },
+  priceRow: {
+    alignItems: "baseline",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  priceLabel: { color: "#888", fontSize: 12 },
+  price: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  gridPrice: { fontSize: 16 },
+  targetPrice: { color: "#79DCA0", fontSize: 15, fontWeight: "600" },
 });

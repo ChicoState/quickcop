@@ -3,10 +3,19 @@ jest.mock("../lib/supabase", () => ({
 }));
 
 jest.mock("../features/products/ProductCard", () => ({
-  ProductCard: ({ name, imageUrl }: { name: string; imageUrl?: string }) => {
+  ProductCard: ({
+    name,
+    imageUrl,
+    targetPrice,
+  }: {
+    name: string;
+    imageUrl?: string;
+    targetPrice?: string;
+  }) => {
     return (
       <>
         <MockText testID="shared-product-card">{name}</MockText>
+        {targetPrice && <MockText>{`Your target: ${targetPrice}`}</MockText>}
         {imageUrl && (
           <MockText accessibilityLabel={`${name} product image`}>
             image
@@ -85,6 +94,7 @@ describe("HomeScreen", () => {
     );
 
     expect(screen.getByText("LEGO Star Wars Set")).toBeTruthy();
+    expect(screen.getByText("Your target: $59.99")).toBeTruthy();
     expect(
       screen.getByLabelText("LEGO Star Wars Set product image"),
     ).toBeTruthy();

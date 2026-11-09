@@ -68,10 +68,10 @@ Start the local API with:
 npm run webscraper:start
 ```
 
-It listens on port `3000` and accepts a product page URL:
+It listens on port `3001` by default and accepts a product page URL:
 
 ```bash
-curl --request POST http://localhost:3000/product-previews \
+curl --request POST http://localhost:3001/product-previews \
   --header 'content-type: application/json' \
   --data '{"url":"https://store.example/products/widget-123"}'
 ```

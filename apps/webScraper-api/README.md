@@ -11,7 +11,7 @@ npm ci
 npm run webscraper:start
 ```
 
-The API listens on `http://localhost:3000`.
+The API listens on `http://localhost:3001` by default. Set the `PORT` environment variable to use a different port.
 
 ## Endpoint
 

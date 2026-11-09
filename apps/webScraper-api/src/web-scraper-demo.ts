@@ -17,7 +17,7 @@ type ApiError = {
 
 export async function requestWebScraperProductPreview(
   url: string,
-  apiUrl = "http://localhost:3000",
+  apiUrl = "http://localhost:3001",
   fetcher: typeof fetch = fetch,
 ): Promise<WebScraperProductPreview> {
   const response = await fetcher(

@@ -72,6 +72,7 @@ export function HomeScreen({
                   name={item.name}
                   imageUrl={item.imageUrl}
                   price={item.currentPrice}
+                  targetPrice={item.targetPrice}
                   store={item.store}
                 />
               ))}
