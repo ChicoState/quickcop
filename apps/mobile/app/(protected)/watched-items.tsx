@@ -10,7 +10,7 @@ export default function WatchedItemsRoute() {
     <WatchedItemsScreen
       navigation={{ replace: (route) => router.replace(route as never) }}
       onLogout={async () => {
-        await supabase.auth.signOut();
+        if (supabase) await supabase.auth.signOut();
         router.replace("/");
       }}
     />

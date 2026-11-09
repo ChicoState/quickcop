@@ -1,12 +1,15 @@
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
+// Supabase's session payload (access token + refresh token + user metadata)
+// routinely exceeds SecureStore's 2048-byte per-item limit, so the session
+// itself is kept in AsyncStorage. Nothing else currently uses this module.
 export const secureStorage = {
   getItem: (key: string): Promise<string | null> => {
     if (Platform.OS === "web") {
       return Promise.resolve(localStorage.getItem(key));
     }
-    return SecureStore.getItemAsync(key);
+    return AsyncStorage.getItem(key);
   },
 
   setItem: (key: string, value: string): Promise<void> => {
@@ -14,7 +17,7 @@ export const secureStorage = {
       localStorage.setItem(key, value);
       return Promise.resolve();
     }
-    return SecureStore.setItemAsync(key, value);
+    return AsyncStorage.setItem(key, value);
   },
 
   removeItem: (key: string): Promise<void> => {
@@ -22,6 +25,6 @@ export const secureStorage = {
       localStorage.removeItem(key);
       return Promise.resolve();
     }
-    return SecureStore.deleteItemAsync(key);
+    return AsyncStorage.removeItem(key);
   },
 };

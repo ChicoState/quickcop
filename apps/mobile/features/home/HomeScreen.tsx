@@ -1,12 +1,17 @@
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { loadProducts, type Product } from "../api/productsClient";
 import {
   AuthenticatedHeader,
   type AuthenticatedNavigation,
 } from "../navigation/AuthenticatedHeader";
 import { ProductCard } from "../products/ProductCard";
 import { useWatchedItems } from "../watched-items/WatchedItemsContext";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const POKEMON_POSTER_IMAGE = require("../../assets/images/pokemon-30th-poster.webp");
 
 type HomeScreenProps = {
   navigation?: AuthenticatedNavigation;
@@ -26,6 +31,19 @@ export function HomeScreen({
   onOpenPopularProducts = () => undefined,
 }: HomeScreenProps) {
   const watchedItems = useWatchedItems()?.items ?? [];
+  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadProducts().then((result) => {
+      if (!cancelled && result.ok) setPopularProducts(result.data);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -122,19 +140,23 @@ export function HomeScreen({
           </View>
 
           <View style={styles.productRow}>
-            <ProductCard
-              layout="grid"
-              name="Product Name"
-              price="$19.99"
-              store="Walmart"
-            />
-
-            <ProductCard
-              layout="grid"
-              name="Product Name"
-              price="$49.99"
-              store="Amazon"
-            />
+            {popularProducts.length === 0 ? (
+              <Text style={styles.emptyText}>Loading products...</Text>
+            ) : (
+              popularProducts
+                .slice(0, 2)
+                .map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    available={product.available}
+                    layout="grid"
+                    localImage={POKEMON_POSTER_IMAGE}
+                    name={product.name}
+                    price={product.price}
+                    store={product.store}
+                  />
+                ))
+            )}
           </View>
         </View>
       </ScrollView>
