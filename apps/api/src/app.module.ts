@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AccountModule } from './account/account.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ProductsModule } from './products/products.module';
 import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
-  imports: [SupabaseModule, AccountModule, NotificationsModule],
+  imports: [SupabaseModule, AccountModule, NotificationsModule, ProductsModule],
 })
 export class AppModule {}
